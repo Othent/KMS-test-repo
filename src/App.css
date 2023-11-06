@@ -1,0 +1,29 @@
+
+.App {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 80vh;
+}
+
+.column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h1 {
+  font-size: 3rem;
+}
+
+button {
+  background-color: purple;
+  color: white;
+  font-weight: bold;
+  height: 30px;
+  width: 130px;
+  cursor: pointer;
+}
