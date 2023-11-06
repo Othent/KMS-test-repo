@@ -35,7 +35,7 @@ function App() {
     const data = Buffer.from('Decrypt this data please.')
     const encryptedData = await encrypt(data)
     console.log(encryptedData)
-    const res = await decrypt(encryptedData.data)
+    const res = await decrypt(encryptedData)
     console.log('Decrypt,\n', res)
   }
 
