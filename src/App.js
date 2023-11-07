@@ -1,5 +1,5 @@
 import './App.css';
-import { connect, disconnect, sign, encrypt, decrypt, getActiveKey, getActivePublicKey, getWalletNames, signature } from 'kms-js'
+import { connect, disconnect, sign, encrypt, decrypt, getActiveKey, getActivePublicKey, getWalletNames, signature } from 'kms-js-new'
 import Arweave from 'arweave'
 import { Buffer } from "buffer";
 
@@ -19,10 +19,13 @@ function App() {
 
   const handleSign = async () => {
     const transaction = await arweave.createTransaction({
-        data: Buffer.from('Some data', 'utf8')
+        data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>'
     });
+    transaction.addTag('Content-Type', 'text/html')
     const res = await sign(transaction)
     console.log('Sign,\n', res)
+    const txn = await arweave.transactions.post(transaction)
+    console.log(txn)
   }
 
   const handleEncrypt = async () => {
@@ -62,7 +65,7 @@ function App() {
   return (
     <div className="App">
       <div className='column'>
-        <h1>KMS-JS SDK</h1>
+        <h1>KMS-JS SDK Example</h1>
         <button onClick={handleConnect}>connect</button>
         <button onClick={handleDisconnect}>disconnect</button>
         <button onClick={handleSign}>sign</button>
