@@ -17,7 +17,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "npm link kms-js && npm start"
+    "dev": "npm link kms-js-new && npm start"
   },
   "eslintConfig": {
     "extends": [
