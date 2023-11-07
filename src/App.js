@@ -1,7 +1,6 @@
 import './App.css';
 import { connect, disconnect, sign, encrypt, decrypt, getActiveKey, getActivePublicKey, getWalletNames, signature } from 'kms-js-new'
 import Arweave from 'arweave'
-import { Buffer } from "buffer";
 
 const arweave = Arweave.init({})
 
@@ -29,15 +28,14 @@ function App() {
   }
 
   const handleEncrypt = async () => {
-    const data = Buffer.from('Encrypt this data please.')
+    const data = 'Encrypt this data please.'
     const res = await encrypt(data)
     console.log('Encrypt,\n', res)
   }
 
   const handleDecrypt = async () => {
-    const data = Buffer.from('Decrypt this data please.')
+    const data = 'Decrypt this data please.'
     const encryptedData = await encrypt(data)
-    console.log(encryptedData)
     const res = await decrypt(encryptedData)
     console.log('Decrypt,\n', res)
   }
