@@ -1,68 +1,77 @@
-import './App.css';
-import { connect, disconnect, sign, encrypt, decrypt, getActiveKey, getActivePublicKey, getWalletNames, signature } from 'kms-js-new'
-import Arweave from 'arweave'
+import "./App.css";
+import {
+  connect,
+  disconnect,
+  sign,
+  encrypt,
+  decrypt,
+  getActiveKey,
+  getActivePublicKey,
+  getWalletNames,
+  signature,
+} from "kms-js-new";
+import Arweave from "arweave";
 
-const arweave = Arweave.init({})
+const arweave = Arweave.init({});
 
 function App() {
-
   const handleConnect = async () => {
-    const res = await connect()
-    console.log('Connect,\n', res)
-  }
+    const res = await connect();
+    console.log("Connect,\n", res);
+  };
 
   const handleDisconnect = async () => {
-    const res = await disconnect()
-    console.log('Disconnect,\n', res)
-  }
+    const res = await disconnect();
+    console.log("Disconnect,\n", res);
+  };
 
   const handleSign = async () => {
     const transaction = await arweave.createTransaction({
-        data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>'
+      data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
-    transaction.addTag('Content-Type', 'text/html')
-    const res = await sign(transaction)
-    console.log('Sign,\n', res)
-    const txn = await arweave.transactions.post(transaction)
-    console.log(txn)
-  }
+    transaction.addTag("Content-Type", "text/html");
+    const res = await sign(transaction);
+    console.log("Sign,\n", res);
+    const txn = await arweave.transactions.post(transaction);
+    console.log(txn);
+  };
 
   const handleEncrypt = async () => {
-    const data = 'Encrypt this data please.'
-    const res = await encrypt(data)
-    console.log('Encrypt,\n', res)
-  }
+    const data = "Encrypt this data please.";
+    const res = await encrypt(data);
+    console.log("Encrypt,\n", res);
+  };
 
   const handleDecrypt = async () => {
-    const data = 'Decrypt this data please.'
-    const encryptedData = await encrypt(data)
-    const res = await decrypt(encryptedData)
-    console.log('Decrypt,\n', res)
-  }
+    const data = "Decrypt this data please.";
+    const encryptedData = await encrypt(data);
+    const res = await decrypt(encryptedData);
+    console.log("Decrypt,\n", res);
+  };
 
   const handleGetActiveKey = async () => {
-    const res = await getActiveKey()
-    console.log('Get Active Key,\n', res)
-  }
+    const res = await getActiveKey();
+    console.log("Get Active Key,\n", res);
+  };
 
   const handleGetActivePublicKey = async () => {
-    const res = await getActivePublicKey()
-    console.log('Get Active Public Key,\n', res)
-  }
+    const res = await getActivePublicKey();
+    console.log("Get Active Public Key,\n", res);
+  };
 
   const handleGetWalletNames = async () => {
-    const res = await getWalletNames()
-    console.log('Get Wallet Names,\n', res)
-  }
+    const res = await getWalletNames();
+    console.log("Get Wallet Names,\n", res);
+  };
 
   const handleSignature = async () => {
-    const res = await signature('Sign this')
-    console.log('Signature,\n', res)
-  }
+    const res = await signature("Sign this");
+    console.log("Signature,\n", res);
+  };
 
   return (
     <div className="App">
-      <div className='column'>
+      <div className="column">
         <h1>KMS-JS SDK Example</h1>
         <button onClick={handleConnect}>connect</button>
         <button onClick={handleDisconnect}>disconnect</button>

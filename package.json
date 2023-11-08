@@ -16,7 +16,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "npm link kms-js-new && npm start"
+    "dev": "npm run prettier && npm link kms-js-new && npm start",
+    "prettier": "prettier --write ."
   },
   "eslintConfig": {
     "extends": [
@@ -35,5 +36,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "prettier": "^3.0.3"
   }
 }
