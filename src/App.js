@@ -9,7 +9,7 @@ import {
   getActivePublicKey,
   getWalletNames,
   signature,
-} from "kms-js-new";
+} from "@othent/kms";
 import Arweave from "arweave";
 
 const arweave = Arweave.init({});

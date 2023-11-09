@@ -16,7 +16,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "npm run prettier && npm link kms-js-new && npm start",
+    "dev": "npm run prettier && npm link @othent/kms && npm start",
     "prettier": "prettier --write ."
   },
   "eslintConfig": {
