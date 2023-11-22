@@ -73,6 +73,7 @@ function App() {
     <div className="App">
       <div className="column">
         <h1>KMS-JS SDK Example</h1>
+        <h2>(Check development console for data)</h2>
         <button onClick={handleConnect}>connect</button>
         <button onClick={handleDisconnect}>disconnect</button>
         <button onClick={handleSign}>sign</button>
