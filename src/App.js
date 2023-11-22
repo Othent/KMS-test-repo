@@ -72,7 +72,7 @@ function App() {
   return (
     <div className="App">
       <div className="column">
-        <span>
+        <span className="center">
           <h1>KMS-JS SDK Example</h1>
           <p>(Check development console for data)</p>
         </span>
