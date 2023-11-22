@@ -10,7 +10,7 @@ import {
   getWalletNames,
   signature,
 } from "@othent/kms";
-import Arweave from "arweave";
+import Arweave from "arweave/web";
 
 const arweave = Arweave.init({});
 
