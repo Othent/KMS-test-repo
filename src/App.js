@@ -30,8 +30,19 @@ function App() {
       data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
     transaction.addTag("Content-Type", "text/html");
+
+    // test speed
+    const start = new Date();
+
     const res = await sign(transaction);
     console.log("Sign,\n", res);
+
+    const end = new Date();
+
+    // Calculate the difference in seconds
+    const timeDiff = (end.getTime() - start.getTime()) / 1000;
+    console.log(`Time difference in seconds: ${timeDiff}`);
+
     const txn = await arweave.transactions.post(transaction);
     console.log(txn);
   };
