@@ -14,9 +14,9 @@ import Arweave from "arweave/web";
 
 function App() {
   const arweave = Arweave.init({
-    host: "127.0.0.1",
-    port: 1984,
-    protocol: "http",
+    host: 'arweave.net',
+    protocol: 'https',
+    port: 443,
   });
 
   const handleConnect = async () => {
