@@ -9,13 +9,16 @@ import {
   getActivePublicKey,
   getWalletNames,
   signature,
+  dispatch,
+  signMessage,
+  verifyMessage,
 } from "@othent/kms";
 import Arweave from "arweave/web";
 
 function App() {
   const arweave = Arweave.init({
-    host: 'arweave.net',
-    protocol: 'https',
+    host: "arweave.net",
+    protocol: "https",
     port: 443,
   });
 
@@ -73,6 +76,34 @@ function App() {
     console.log("Signature,\n", res);
   };
 
+  const handleDispatch = async () => {
+    const transaction = await arweave.createTransaction({
+      data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
+    });
+    transaction.addTag("Content-Type", "text/html");
+    console.log(transaction);
+    const res = await dispatch(transaction);
+    console.log("Dispatch,\n", res);
+  };
+
+  const handleSignMessage = async () => {
+    const data = new TextEncoder().encode(
+      "The hash of this msg will be signed.",
+    );
+    const res = await signMessage(data);
+    console.log("Sign Message,\n", res);
+  };
+
+  const handleVerifyMessage = async () => {
+    const data = new TextEncoder().encode(
+      "The hash of this msg will be signed.",
+    );
+    const signedMessage = await signMessage(data);
+    const owner = await getActivePublicKey();
+    const res = await verifyMessage(data, signedMessage, owner);
+    console.log("Signature,\n", res);
+  };
+
   return (
     <div className="App">
       <div className="column">
@@ -89,6 +120,9 @@ function App() {
         <button onClick={handleGetActivePublicKey}>getActivePublicKey</button>
         <button onClick={handleGetWalletNames}>getWalletNames</button>
         <button onClick={handleSignature}>signature</button>
+        <button onClick={handleDispatch}>dispatch</button>
+        <button onClick={handleSignMessage}>signMessage</button>
+        <button onClick={handleVerifyMessage}>verifyMessage</button>
       </div>
     </div>
   );
