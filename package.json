@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@othent/kms": "^1.0.5",
+    "@othent/kms": "^1.0.6",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -17,7 +17,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "npm run prettier && bun run start",
+    "dev": "bun link @othent/kms && bun run prettier && bun run start",
     "prettier": "prettier --write ."
   },
   "eslintConfig": {
@@ -39,6 +39,6 @@
     ]
   },
   "devDependencies": {
-    "prettier": "^3.0.3"
+    "prettier": "^3.2.4"
   }
 }
