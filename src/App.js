@@ -82,7 +82,11 @@ function App() {
     });
     transaction.addTag("Content-Type", "text/html");
     console.log(transaction);
-    const res = await dispatch(transaction);
+    const res = await dispatch(
+      transaction,
+      "https://turbo.ardrive.io",
+      arweave,
+    );
     console.log("Dispatch,\n", res);
   };
 
