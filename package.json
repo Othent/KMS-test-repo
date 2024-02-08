@@ -17,7 +17,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "bun link @othent/kms && bun run prettier && bun run start",
+    "dev": "bun run prettier && bun run start",
     "prettier": "prettier --write ."
   },
   "eslintConfig": {

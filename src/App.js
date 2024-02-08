@@ -37,8 +37,10 @@ function App() {
       data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
     transaction.addTag("Content-Type", "text/html");
+    const start = performance.now();
     const res = await sign(transaction);
-    console.log("Sign,\n", res);
+    const end = performance.now();
+    console.log(`Sign: time taken: ${(end - start) / 1000} seconds,\n`, res);
     const txn = await arweave.transactions.post(transaction);
     console.log(txn);
   };
@@ -72,8 +74,10 @@ function App() {
   };
 
   const handleSignature = async () => {
+    const start = performance.now();
     const res = await signature("Sign this");
-    console.log("Signature,\n", res);
+    const end = performance.now();
+    console.log(`Signature: time taken: ${(end - start) / 1000} seconds,\n`, res);
   };
 
   const handleDispatch = async () => {
@@ -81,21 +85,24 @@ function App() {
       data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
     transaction.addTag("Content-Type", "text/html");
-    console.log(transaction);
+    const start = performance.now();
     const res = await dispatch(
       transaction,
       "https://turbo.ardrive.io",
       arweave,
     );
-    console.log("Dispatch,\n", res);
+    const end = performance.now();
+    console.log(`Dispatch: time taken: ${(end - start) / 1000} seconds,\n`, res);
   };
 
   const handleSignMessage = async () => {
     const data = new TextEncoder().encode(
       "The hash of this msg will be signed.",
     );
+    const start = performance.now();
     const res = await signMessage(data);
-    console.log("Sign Message,\n", res);
+    const end = performance.now();
+    console.log(`Sign Message: time taken: ${(end - start) / 1000} seconds,\n`, res);
   };
 
   const handleVerifyMessage = async () => {
