@@ -5,13 +5,14 @@ import {
   sign,
   encrypt,
   decrypt,
-  getActiveKey,
+  getActiveAddress,
   getActivePublicKey,
   getWalletNames,
   signature,
   dispatch,
   signMessage,
   verifyMessage,
+  signDataItem,
 } from "@othent/kms";
 import Arweave from "arweave/web";
 
@@ -58,9 +59,9 @@ function App() {
     console.log("Decrypt,\n", res);
   };
 
-  const handleGetActiveKey = async () => {
-    const res = await getActiveKey();
-    console.log("Get Active Key,\n", res);
+  const handleGetActiveAddress = async () => {
+    const res = await getActiveAddress();
+    console.log("Get Active Address,\n", res);
   };
 
   const handleGetActivePublicKey = async () => {
@@ -77,7 +78,10 @@ function App() {
     const start = performance.now();
     const res = await signature("Sign this");
     const end = performance.now();
-    console.log(`Signature: time taken: ${(end - start) / 1000} seconds,\n`, res);
+    console.log(
+      `Signature: time taken: ${(end - start) / 1000} seconds,\n`,
+      res,
+    );
   };
 
   const handleDispatch = async () => {
@@ -92,7 +96,10 @@ function App() {
       arweave,
     );
     const end = performance.now();
-    console.log(`Dispatch: time taken: ${(end - start) / 1000} seconds,\n`, res);
+    console.log(
+      `Dispatch: time taken: ${(end - start) / 1000} seconds,\n`,
+      res,
+    );
   };
 
   const handleSignMessage = async () => {
@@ -102,7 +109,10 @@ function App() {
     const start = performance.now();
     const res = await signMessage(data);
     const end = performance.now();
-    console.log(`Sign Message: time taken: ${(end - start) / 1000} seconds,\n`, res);
+    console.log(
+      `Sign Message: time taken: ${(end - start) / 1000} seconds,\n`,
+      res,
+    );
   };
 
   const handleVerifyMessage = async () => {
@@ -113,6 +123,12 @@ function App() {
     const owner = await getActivePublicKey();
     const res = await verifyMessage(data, signedMessage, owner);
     console.log("Signature,\n", res);
+  };
+
+  const handleSignDataItem = async () => {
+    const data = "Example data";
+    const res = await signDataItem({data});
+    console.log("Sign Data Item,\n", res);
   };
 
   return (
@@ -127,13 +143,14 @@ function App() {
         <button onClick={handleSign}>sign</button>
         <button onClick={handleEncrypt}>encrypt</button>
         <button onClick={handleDecrypt}>decrypt</button>
-        <button onClick={handleGetActiveKey}>getActiveKey</button>
+        <button onClick={handleGetActiveAddress}>getActiveAddress</button>
         <button onClick={handleGetActivePublicKey}>getActivePublicKey</button>
         <button onClick={handleGetWalletNames}>getWalletNames</button>
         <button onClick={handleSignature}>signature</button>
         <button onClick={handleDispatch}>dispatch</button>
         <button onClick={handleSignMessage}>signMessage</button>
         <button onClick={handleVerifyMessage}>verifyMessage</button>
+        <button onClick={handleSignDataItem}>signDataItem</button>
       </div>
     </div>
   );
