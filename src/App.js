@@ -38,8 +38,9 @@ function App() {
       data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
     transaction.addTag("Content-Type", "text/html");
+    const analyticsTags = [{ name: "AppName", value: "Lorimer" }];
     const start = performance.now();
-    const res = await sign(transaction);
+    const res = await sign(transaction, analyticsTags);
     const end = performance.now();
     console.log(`Sign: time taken: ${(end - start) / 1000} seconds,\n`, res);
     const txn = await arweave.transactions.post(transaction);
@@ -89,11 +90,13 @@ function App() {
       data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
     transaction.addTag("Content-Type", "text/html");
+    const analyticsTags = [{ name: "AppName", value: "Lorimer" }];
     const start = performance.now();
     const res = await dispatch(
       transaction,
       "https://turbo.ardrive.io",
       arweave,
+      analyticsTags,
     );
     const end = performance.now();
     console.log(
@@ -127,7 +130,7 @@ function App() {
 
   const handleSignDataItem = async () => {
     const data = "Example data";
-    const res = await signDataItem({data});
+    const res = await signDataItem({ data });
     console.log("Sign Data Item,\n", res);
   };
 
