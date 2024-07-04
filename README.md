@@ -18,3 +18,8 @@ To run it with a local `KeyManagementService` instance:
 2. Inside `@othent/kms`, run `pnpm dev`.
 
 3. Inside this repo, run `bun link @othent/kms`.
+
+
+## TODO / Ideas / Improvements / Questions
+
+- Migrate to Next.js and include a client-side and a SSR/SSG version?
