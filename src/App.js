@@ -1,36 +1,55 @@
 import "./App.css";
 import {
   connect,
-  disconnect,
-  sign,
-  encrypt,
   decrypt,
+  disconnect,
+  dispatch,
+  encrypt,
   getActiveAddress,
   getActivePublicKey,
+  getUserDetails,
   getWalletNames,
+  reconnect,
+  sign,
   signature,
-  dispatch,
+  signDataItem,
   signMessage,
   verifyMessage,
-  signDataItem,
 } from "@othent/kms";
 import Arweave from "arweave/web";
+import { useState, useEffect } from "react";
+
+const arweave = Arweave.init({
+  host: "arweave.net",
+  protocol: "https",
+  port: 443,
+});
 
 function App() {
-  const arweave = Arweave.init({
-    host: "arweave.net",
-    protocol: "https",
-    port: 443,
-  });
+  const [userDetails, setUserDetails] = useState(null);
+
+  useEffect(() => {
+    async function initUserDetails() {
+      const initialUserDetails = await reconnect();
+
+      console.log("initialUserDetails =", initialUserDetails);
+
+      setUserDetails(initialUserDetails);
+    }
+
+    initUserDetails();
+  }, []);
 
   const handleConnect = async () => {
     const res = await connect();
     console.log("Connect,\n", res);
+    setUserDetails(res);
   };
 
   const handleDisconnect = async () => {
     const res = await disconnect();
     console.log("Disconnect,\n", res);
+    setUserDetails(null);
   };
 
   const handleSign = async () => {
@@ -38,6 +57,7 @@ function App() {
       data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
     });
     transaction.addTag("Content-Type", "text/html");
+    // TODO: Why are we treating these `analyticsTags` differently?
     const analyticsTags = [{ name: "AppName", value: "Lorimer" }];
     const start = performance.now();
     const res = await sign(transaction, analyticsTags);
@@ -45,12 +65,16 @@ function App() {
     console.log(`Sign: time taken: ${(end - start) / 1000} seconds,\n`, res);
     const txn = await arweave.transactions.post(transaction);
     console.log(txn);
+
+    setUserDetails(getUserDetails());
   };
 
   const handleEncrypt = async () => {
     const data = "Encrypt this data please.";
     const res = await encrypt(data);
     console.log("Encrypt,\n", res);
+
+    setUserDetails(getUserDetails());
   };
 
   const handleDecrypt = async () => {
@@ -58,20 +82,22 @@ function App() {
     const encryptedData = await encrypt(data);
     const res = await decrypt(encryptedData);
     console.log("Decrypt,\n", res);
+
+    setUserDetails(getUserDetails());
   };
 
   const handleGetActiveAddress = async () => {
-    const res = await getActiveAddress();
+    const res = getActiveAddress();
     console.log("Get Active Address,\n", res);
   };
 
   const handleGetActivePublicKey = async () => {
-    const res = await getActivePublicKey();
+    const res = getActivePublicKey();
     console.log("Get Active Public Key,\n", res);
   };
 
   const handleGetWalletNames = async () => {
-    const res = await getWalletNames();
+    const res = getWalletNames();
     console.log("Get Wallet Names,\n", res);
   };
 
@@ -83,6 +109,8 @@ function App() {
       `Signature: time taken: ${(end - start) / 1000} seconds,\n`,
       res,
     );
+
+    setUserDetails(getUserDetails());
   };
 
   const handleDispatch = async () => {
@@ -94,8 +122,8 @@ function App() {
     const start = performance.now();
     const res = await dispatch(
       transaction,
-      "https://turbo.ardrive.io",
       arweave,
+      "https://turbo.ardrive.io",
       analyticsTags,
     );
     const end = performance.now();
@@ -103,6 +131,8 @@ function App() {
       `Dispatch: time taken: ${(end - start) / 1000} seconds,\n`,
       res,
     );
+
+    setUserDetails(getUserDetails());
   };
 
   const handleSignMessage = async () => {
@@ -116,6 +146,8 @@ function App() {
       `Sign Message: time taken: ${(end - start) / 1000} seconds,\n`,
       res,
     );
+
+    setUserDetails(getUserDetails());
   };
 
   const handleVerifyMessage = async () => {
@@ -126,12 +158,16 @@ function App() {
     const owner = await getActivePublicKey();
     const res = await verifyMessage(data, signedMessage, owner);
     console.log("Signature,\n", res);
+
+    setUserDetails(getUserDetails());
   };
 
   const handleSignDataItem = async () => {
     const data = "Example data";
     const res = await signDataItem({ data });
     console.log("Sign Data Item,\n", res);
+
+    setUserDetails(getUserDetails());
   };
 
   return (
@@ -155,6 +191,10 @@ function App() {
         <button onClick={handleVerifyMessage}>verifyMessage</button>
         <button onClick={handleSignDataItem}>signDataItem</button>
       </div>
+
+      {userDetails && (
+        <pre className="code">{JSON.stringify(userDetails, null, "  ")}</pre>
+      )}
     </div>
   );
 }
