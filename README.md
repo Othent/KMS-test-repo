@@ -17,8 +17,7 @@ To run it with a local `KeyManagementService` instance:
 
 2. Inside `@othent/kms`, run `pnpm dev`.
 
-3. Inside this repo, run `bun link @othent/kms`.
-
+3. Inside this repo, run `bun link @othent/kms`. See [`bun link`](https://bun.sh/docs/cli/link).
 
 ## TODO / Ideas / Improvements / Questions
 
