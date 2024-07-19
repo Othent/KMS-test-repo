@@ -50,7 +50,7 @@ function App() {
       env: "dev",
       auth0Strategy: "refresh-memory",
       autoConnect: "off",
-      throwErrors: false,
+      throwErrors: true,
     });
 
   const othent = useMemo(() => {
@@ -81,19 +81,29 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [othent]);
 
-  const handleAuthChange = useCallback((userDetails) => {
-    console.log("onAuthChange =", userDetails);
-
-    hasLoggedInRef.current = !!userDetails;
-
-    setUserDetails(userDetails);
-  }, []);
-
   useEffect(() => {
-    return othent.addEventListener("auth", handleAuthChange);
+    const removeAuthEventListener = othent.addEventListener("auth", (userDetails) => {
+      console.log("onAuthChange =", userDetails);
+
+      hasLoggedInRef.current = !!userDetails;
+
+      setUserDetails(userDetails);
+    });
+
+    const removeErrorEventListener = othent.addEventListener("error", (error) => {
+      console.error(
+        'Unthrown error:\n',
+        error,
+      );
+    });
+
+    return () => {
+      removeAuthEventListener();
+      removeErrorEventListener();
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [othent, handleAuthChange]);
+  }, [othent]);
 
   function getHandler(fn, options) {
     const { name } = options;
