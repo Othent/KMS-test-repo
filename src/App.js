@@ -6,7 +6,6 @@ import { TestButton } from "./components/TestButton";
 
 import "./App.css";
 
-// TODO: Add this into the library:
 const arweave = Arweave.init({
   host: "arweave.net",
   protocol: "https",
@@ -215,12 +214,7 @@ function App() {
         ],
       });
 
-      const result = await othent.dispatch(
-        transaction,
-        // TODO: Make this optional in the SDK
-        arweave,
-        "https://turbo.ardrive.io",
-      );
+      const result = await othent.dispatch(transaction);
 
       return { result };
     },
@@ -389,36 +383,50 @@ function App() {
 
   // MISC.:
 
-  const handleWalletName = getHandler(async () => {
-    const result = othent.walletName;
+  const handleWalletName = getHandler(
+    async () => {
+      const result = othent.walletName;
 
-    return { result };
-  }, { name: 'walletName' });
+      return { result };
+    },
+    { name: "walletName" },
+  );
 
-  const handleWalletVersion = getHandler(async () => {
-    const result = othent.walletVersion;
+  const handleWalletVersion = getHandler(
+    async () => {
+      const result = othent.walletVersion;
 
-    return { result };
-  }, { name: 'walletVersion' });
+      return { result };
+    },
+    { name: "walletVersion" },
+  );
 
-  const handleConfig = getHandler(async () => {
-    const result = othent.config;
+  const handleConfig = getHandler(
+    async () => {
+      const result = othent.config;
 
-    return { result };
-  }, { name: 'config' });
+      return { result };
+    },
+    { name: "config" },
+  );
 
-  const handleGetArweaveConfig = getHandler(async () => {
-    const result = await othent.getArweaveConfig();
+  const handleGetArweaveConfig = getHandler(
+    async () => {
+      const result = await othent.getArweaveConfig();
 
-    return { result };
-  }, { name: 'getArweaveConfig' });
+      return { result };
+    },
+    { name: "getArweaveConfig" },
+  );
 
-  const handleGetPermissions = getHandler(async () => {
-    const result = await othent.getPermissions();
+  const handleGetPermissions = getHandler(
+    async () => {
+      const result = await othent.getPermissions();
 
-    return { result };
-  }, { name: 'getPermissions' });
-
+      return { result };
+    },
+    { name: "getPermissions" },
+  );
 
   return (
     <div className="app">
