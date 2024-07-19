@@ -28,8 +28,8 @@ function replacer(key, value) {
     return value;
   }
 
-  return uint8ArrayTob64Url(uint8Array)
-};
+  return uint8ArrayTob64Url(uint8Array);
+}
 
 // TODO: Add a method onAuthChange to get notified about user data changes or logIn/logOut potentially with cross-tab support.
 const othent = new Othent();
@@ -47,17 +47,14 @@ function App() {
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
-  const [{
-    mode,
-    autoInit,
-    useStrings,
-    auth0Strategy,
-  }, setSettings] = useState({
-    mode: 'dev',
-    autoInit: true,
-    useStrings: true,
-    auth0Strategy: 'refresh-memory',
-  });
+  const [{ mode, autoInit, useStrings, auth0Strategy }, setSettings] = useState(
+    {
+      mode: "dev",
+      autoInit: true,
+      useStrings: true,
+      auth0Strategy: "refresh-memory",
+    },
+  );
 
   const isInitializingRef = useRef(false);
 
@@ -93,7 +90,7 @@ function App() {
         ...prevResults,
         [name]: {
           ...prevResults[name],
-          status: 'loading',
+          status: "loading",
           elapsed: undefined,
         },
       }));
@@ -106,16 +103,14 @@ function App() {
         const returnValue = await fn();
         const elapsed = performance.now() - start;
 
-        console.log(
-          `${name} (${(elapsed / 1000).toFixed(1)}s) =`,
-          returnValue,
-        );
+        console.log(`${name} (${(elapsed / 1000).toFixed(1)}s) =`, returnValue);
 
         setResults((prevResults) => ({
           ...prevResults,
           [name]: {
             ...returnValue,
-            status: returnValue.isValid ?? !!returnValue.result ? 'ok' : 'error',
+            status:
+              returnValue.isValid ?? !!returnValue.result ? "ok" : "error",
             elapsed,
           },
         }));
@@ -127,9 +122,9 @@ function App() {
         setResults((prevResults) => ({
           ...prevResults,
           [name]: {
-              err,
-              status: 'error',
-              elapsed,
+            err,
+            status: "error",
+            elapsed,
           },
         }));
       }
@@ -303,7 +298,9 @@ function App() {
       //   data: Array.from(encryptedData),
       // });
 
-      const isValid = result === (useStrings ? plaintext : new TextDecoder().decode(plaintext));
+      const isValid =
+        result ===
+        (useStrings ? plaintext : new TextDecoder().decode(plaintext));
 
       return { result, isValid, plaintext, ciphertext };
     },
@@ -390,6 +387,39 @@ function App() {
     { name: "privateHash" },
   );
 
+  // MISC.:
+
+  const handleWalletName = getHandler(async () => {
+    const result = othent.walletName;
+
+    return { result };
+  }, { name: 'walletName' });
+
+  const handleWalletVersion = getHandler(async () => {
+    const result = othent.walletVersion;
+
+    return { result };
+  }, { name: 'walletVersion' });
+
+  const handleConfig = getHandler(async () => {
+    const result = othent.config;
+
+    return { result };
+  }, { name: 'config' });
+
+  const handleGetArweaveConfig = getHandler(async () => {
+    const result = await othent.getArweaveConfig();
+
+    return { result };
+  }, { name: 'getArweaveConfig' });
+
+  const handleGetPermissions = getHandler(async () => {
+    const result = await othent.getPermissions();
+
+    return { result };
+  }, { name: 'getPermissions' });
+
+
   return (
     <div className="app">
       <div className="header__base">
@@ -399,25 +429,29 @@ function App() {
         <div className="userCard__base">
           <img
             className="userCard__img"
-            src={ userDetails?.picture || 'https://othent.io/user.png' }
-            alt={ userDetails?.name || '' } />
+            src={userDetails?.picture || "https://othent.io/user.png"}
+            alt={userDetails?.name || ""}
+          />
 
           <ul className="userCard__list">
-            <li>{ userDetails?.name || '-' }</li>
-            <li>{ userDetails?.email || '-' }</li>
-            <li>{ userDetails?.walletAddress || '-'.repeat(43) }</li>
+            <li>{userDetails?.name || "-"}</li>
+            <li>{userDetails?.email || "-"}</li>
+            <li>{userDetails?.walletAddress || "-".repeat(43)}</li>
           </ul>
 
           <button
             className="userCard__expandButton"
-            onClick={ () => setShowDetailsJSON(v => !v) }
-            aria-expanded={ showDetailsJSON ? 'true' : 'false' }>
-            { showDetailsJSON ? '×' : '🩻' }
+            onClick={() => setShowDetailsJSON((v) => !v)}
+            aria-expanded={showDetailsJSON ? "true" : "false"}
+          >
+            {showDetailsJSON ? "×" : "🩻"}
           </button>
         </div>
 
         {showDetailsJSON && userDetails && (
-          <pre className="userCard__code">{JSON.stringify(userDetails, null, "  ")}</pre>
+          <pre className="userCard__code">
+            {JSON.stringify(userDetails, null, "  ")}
+          </pre>
         )}
       </div>
 
@@ -425,94 +459,140 @@ function App() {
         <TestButton
           name="connect"
           onClick={handleConnect}
-          { ...results["connect"] } />
+          {...results["connect"]}
+        />
 
         <TestButton
           name="disconnect"
           onClick={handleDisconnect}
-          { ...results["disconnect"] } />
+          {...results["disconnect"]}
+        />
       </div>
 
       <div className="block">
         <TestButton
           name="getActiveAddress"
           onClick={handleGetActiveAddress}
-          { ...results["getActiveAddress"] } />
+          {...results["getActiveAddress"]}
+        />
 
         <TestButton
           name="getActivePublicKey"
           onClick={handleGetActivePublicKey}
-          { ...results["getActivePublicKey"] } />
+          {...results["getActivePublicKey"]}
+        />
 
         <TestButton
           name="getAllAddresses"
           onClick={handleGetAllAddresses}
-          { ...results["getAllAddresses"] } />
+          {...results["getAllAddresses"]}
+        />
 
         <TestButton
           name="getWalletNames"
           onClick={handleGetWalletNames}
-          { ...results["getWalletNames"] } />
+          {...results["getWalletNames"]}
+        />
 
         <TestButton
           name="getUserDetails"
           onClick={handleGetUserDetails}
-          { ...results["getUserDetails"] } />
+          {...results["getUserDetails"]}
+        />
       </div>
 
       <div className="block">
-        <TestButton
-          name="sign"
-          onClick={handleSign}
-          { ...results["sign"] } />
+        <TestButton name="sign" onClick={handleSign} {...results["sign"]} />
 
         <TestButton
           name="dispatch"
           onClick={handleDispatch}
-          { ...results["dispatch"] } />
+          {...results["dispatch"]}
+        />
       </div>
 
       <div className="block">
         <TestButton
           name="encrypt"
           onClick={handleEncrypt}
-          { ...results["encrypt"] } />
+          {...results["encrypt"]}
+        />
 
         <TestButton
           name="decrypt"
           onClick={handleDecrypt}
-          { ...results["decrypt"] } />
-
-        <TestButton
-          name="signature"
-          onClick={handleSignature}
-          { ...results["signature"] } />
+          {...results["decrypt"]}
+        />
       </div>
 
       <div className="block">
         <TestButton
+          name="signature"
+          onClick={handleSignature}
+          {...results["signature"]}
+        />
+
+        <TestButton
           name="signDataItem"
           onClick={handleSignDataItem}
-          { ...results["signDataItem"] } />
+          {...results["signDataItem"]}
+        />
 
         <TestButton
           name="signMessage"
           onClick={handleSignMessage}
-          { ...results["signMessage"] } />
+          {...results["signMessage"]}
+        />
 
         <TestButton
           name="verifyMessage"
           onClick={handleVerifyMessage}
-          { ...results["verifyMessage"] } />
+          {...results["verifyMessage"]}
+        />
 
         <TestButton
           name="privateHash"
           onClick={handlePrivateHash}
-          { ...results["privateHash"] } />
+          {...results["privateHash"]}
+        />
       </div>
 
       <div className="block">
-        <pre className="results__code">{JSON.stringify(results, replacer, "  ")}</pre>
+        <TestButton
+          name="walletName"
+          onClick={handleWalletName}
+          {...results["walletName"]}
+        />
+
+        <TestButton
+          name="walletVersion"
+          onClick={handleWalletVersion}
+          {...results["walletVersion"]}
+        />
+
+        <TestButton
+          name="config"
+          onClick={handleConfig}
+          {...results["config"]}
+        />
+
+        <TestButton
+          name="getArweaveConfig"
+          onClick={handleGetArweaveConfig}
+          {...results["getArweaveConfig"]}
+        />
+
+        <TestButton
+          name="getPermissions"
+          onClick={handleGetPermissions}
+          {...results["getPermissions"]}
+        />
+      </div>
+
+      <div className="block">
+        <pre className="results__code">
+          {JSON.stringify(results, replacer, "  ")}
+        </pre>
       </div>
     </div>
   );
