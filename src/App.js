@@ -1,67 +1,137 @@
-import "./App.css";
-import { Othent } from "@othent/kms";
+import { Othent, uint8ArrayTob64Url } from "@othent/kms";
 import Arweave from "arweave/web";
 import { useState, useEffect, useRef } from "react";
 import { DataItem } from "warp-arbundles";
+import { TestButton } from "./components/TestButton";
 
+import "./App.css";
+
+// TODO: Add this into the library:
 const arweave = Arweave.init({
   host: "arweave.net",
   protocol: "https",
   port: 443,
 });
 
+function replacer(key, value) {
+  let uint8Array;
+
+  if (
+    value instanceof Buffer ||
+    value instanceof DataView ||
+    ArrayBuffer.isView(value)
+  ) {
+    uint8Array = new Uint8Array(value.buffer);
+  } else if (value instanceof ArrayBuffer) {
+    uint8Array = new Uint8Array(value);
+  } else {
+    return value;
+  }
+
+  return uint8ArrayTob64Url(uint8Array)
+};
+
 // TODO: Add a method onAuthChange to get notified about user data changes or logIn/logOut potentially with cross-tab support.
-// TODO: Add an option to globally add our own tags?
 const othent = new Othent();
 
+// TODO: Allow re-init with init function that accept constructor signature...
+// export const DEFAULT_OTHENT_CONFIG: OthentConfig = {
+//   auth0Domain: "gmzcodes-test.eu.auth0.com",
+//   auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+//   auth0Strategy: "refresh-localstorage",
+//   serverBaseURL: "http://localhost:3010",
+// };
+
 function App() {
+  const [showDetailsJSON, setShowDetailsJSON] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
-  const [usePlainText, setUsePlainText] = useState(true);
 
-  const isInitializedRef = useRef(false);
+  const [{
+    mode,
+    autoInit,
+    useStrings,
+    auth0Strategy,
+  }, setSettings] = useState({
+    mode: 'dev',
+    autoInit: true,
+    useStrings: true,
+    auth0Strategy: 'refresh-memory',
+  });
+
+  const isInitializingRef = useRef(false);
 
   useEffect(() => {
-    if (isInitializedRef.current) return;
-
-    isInitializedRef.current = true;
-
     async function initUserDetails() {
+      if (isInitializingRef.current) return;
+
+      isInitializingRef.current = true;
+
+      setUserDetails(null);
+
       try {
         const initialUserDetails = await othent.connect();
 
-        console.log("initialUserDetails =", initialUserDetails);
+        // console.log("initialUserDetails =", initialUserDetails);
 
         setUserDetails(initialUserDetails);
       } catch (err) {
         console.log("connect() error:", err);
       }
+
+      isInitializingRef.current = false;
     }
 
-    initUserDetails();
-  }, []);
+    if (autoInit) initUserDetails();
+  }, [othent, autoInit]);
 
   function getHandler(fn, options) {
     const { name } = options;
 
     return async () => {
+      setResults((prevResults) => ({
+        ...prevResults,
+        [name]: {
+          ...prevResults[name],
+          status: 'loading',
+          elapsed: undefined,
+        },
+      }));
+
       console.group(`${name}...`);
 
+      const start = performance.now();
+
       try {
-        const start = performance.now();
         const returnValue = await fn();
-        const end = performance.now();
+        const elapsed = performance.now() - start;
 
         console.log(
-          `${name} (~${((end - start) / 1000).toFixed(1)}s) =`,
+          `${name} (${(elapsed / 1000).toFixed(1)}s) =`,
           returnValue,
         );
 
-        setResults((prevResults) => ({ ...prevResults, [name]: returnValue }));
+        setResults((prevResults) => ({
+          ...prevResults,
+          [name]: {
+            ...returnValue,
+            status: returnValue.isValid ?? !!returnValue.result ? 'ok' : 'error',
+            elapsed,
+          },
+        }));
       } catch (err) {
+        const elapsed = performance.now() - start;
+
         console.error(err);
 
-        setResults((prevResults) => ({ ...prevResults, [name]: { err } }));
+        setResults((prevResults) => ({
+          ...prevResults,
+          [name]: {
+              err,
+              status: 'error',
+              elapsed,
+          },
+        }));
       }
 
       console.groupEnd();
@@ -182,6 +252,7 @@ function App() {
 
       const result = await othent.sign(transaction);
 
+      // TODO: Add an option to post the transaction...
       // const txn = await arweave.transactions.post(transaction);
 
       const isValid = await arweave.transactions.verify(transaction);
@@ -199,7 +270,7 @@ function App() {
       // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
       // const data = { type: 'Buffer', data };
 
-      const plaintext = usePlainText
+      const plaintext = useStrings
         ? "Encrypt this text, please."
         : new TextEncoder().encode("Encrypt this data, please.");
 
@@ -212,14 +283,14 @@ function App() {
 
   const handleDecrypt = getHandler(
     async () => {
-      const plaintext = usePlainText
+      const plaintext = useStrings
         ? "Decrypt this text, please."
         : new TextEncoder().encode("Decrypt this data, please.");
 
       const encryptReturn = await othent.encrypt(plaintext);
 
-      // TODO: Transform encryptReturn if usePlainText:
-      // const ciphertext = usePlainText
+      // TODO: Transform encryptReturn if useStrings:
+      // const ciphertext = useStrings
       //   ? new TextDecoder().decode(encryptReturn)
       //   : encryptReturn;
 
@@ -232,7 +303,9 @@ function App() {
       //   data: Array.from(encryptedData),
       // });
 
-      return { result, plaintext, ciphertext };
+      const isValid = result === (useStrings ? plaintext : new TextDecoder().decode(plaintext));
+
+      return { result, isValid, plaintext, ciphertext };
     },
     { name: "decrypt" },
   );
@@ -241,7 +314,7 @@ function App() {
 
   const handleSignature = getHandler(
     async () => {
-      const dataToSign = usePlainText
+      const dataToSign = useStrings
         ? "Sign this text, please."
         : new TextEncoder().encode("Sign this data, please.");
 
@@ -266,7 +339,7 @@ function App() {
         return false;
       });
 
-      // TODO: Transform result if usePlainText
+      // TODO: Transform result if useStrings
 
       return { result, isValid };
     },
@@ -277,13 +350,13 @@ function App() {
     async () => {
       // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
 
-      const data = usePlainText
+      const data = useStrings
         ? "The hash of this text will be signed."
         : new TextEncoder().encode("The hash of this data will be signed.");
 
       const result = await othent.signMessage(data);
 
-      // TODO: Transform result if usePlainText
+      // TODO: Transform result if useStrings
 
       return { result, data };
     },
@@ -294,14 +367,14 @@ function App() {
     async () => {
       // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
 
-      const data = usePlainText
+      const data = useStrings
         ? "The hash of this text will be signed."
         : new TextEncoder().encode("The hash of this data will be signed.");
 
       const signedData = await othent.signMessage(data);
       const result = await othent.verifyMessage(data, signedData);
 
-      // TODO: Transform result if usePlainText
+      // TODO: Transform result if useStrings
 
       return { result, data, signedData };
     },
@@ -318,33 +391,129 @@ function App() {
   );
 
   return (
-    <div className="App">
-      <div className="column">
-        <span className="center">
-          <h1>KMS-JS SDK Example</h1>
-          <p>(Check development console for data)</p>
-        </span>
-        <button onClick={handleConnect}>connect</button>
-        <button onClick={handleDisconnect}>disconnect</button>
-        <button onClick={handleGetActiveAddress}>getActiveAddress</button>
-        <button onClick={handleGetActivePublicKey}>getActivePublicKey</button>
-        <button onClick={handleGetAllAddresses}>getAllAddresses</button>
-        <button onClick={handleGetWalletNames}>getWalletNames</button>
-        <button onClick={handleGetUserDetails}>getUserDetails</button>
-        <button onClick={handleSign}>sign</button>
-        <button onClick={handleDispatch}>dispatch</button>
-        <button onClick={handleEncrypt}>encrypt</button>
-        <button onClick={handleDecrypt}>decrypt</button>
-        <button onClick={handleSignature}>signature</button>
-        <button onClick={handleSignDataItem}>signDataItem</button>
-        <button onClick={handleSignMessage}>signMessage</button>
-        <button onClick={handleVerifyMessage}>verifyMessage</button>
-        <button onClick={handlePrivateHash}>privateHash</button>
+    <div className="app">
+      <div className="header__base">
+        <h1 className="header__title">Othent KMS JS SDK Demo</h1>
+        <p>Check the DevTools Console for additional information.</p>
+
+        <div className="userCard__base">
+          <img
+            className="userCard__img"
+            src={ userDetails?.picture || 'https://othent.io/user.png' }
+            alt={ userDetails?.name || '' } />
+
+          <ul className="userCard__list">
+            <li>{ userDetails?.name || '-' }</li>
+            <li>{ userDetails?.email || '-' }</li>
+            <li>{ userDetails?.walletAddress || '-'.repeat(43) }</li>
+          </ul>
+
+          <button
+            className="userCard__expandButton"
+            onClick={ () => setShowDetailsJSON(v => !v) }
+            aria-expanded={ showDetailsJSON ? 'true' : 'false' }>
+            { showDetailsJSON ? '×' : '🩻' }
+          </button>
+        </div>
+
+        {showDetailsJSON && userDetails && (
+          <pre className="userCard__code">{JSON.stringify(userDetails, null, "  ")}</pre>
+        )}
       </div>
 
-      {userDetails && (
-        <pre className="code">{JSON.stringify(userDetails, null, "  ")}</pre>
-      )}
+      <div className="block">
+        <TestButton
+          name="connect"
+          onClick={handleConnect}
+          { ...results["connect"] } />
+
+        <TestButton
+          name="disconnect"
+          onClick={handleDisconnect}
+          { ...results["disconnect"] } />
+      </div>
+
+      <div className="block">
+        <TestButton
+          name="getActiveAddress"
+          onClick={handleGetActiveAddress}
+          { ...results["getActiveAddress"] } />
+
+        <TestButton
+          name="getActivePublicKey"
+          onClick={handleGetActivePublicKey}
+          { ...results["getActivePublicKey"] } />
+
+        <TestButton
+          name="getAllAddresses"
+          onClick={handleGetAllAddresses}
+          { ...results["getAllAddresses"] } />
+
+        <TestButton
+          name="getWalletNames"
+          onClick={handleGetWalletNames}
+          { ...results["getWalletNames"] } />
+
+        <TestButton
+          name="getUserDetails"
+          onClick={handleGetUserDetails}
+          { ...results["getUserDetails"] } />
+      </div>
+
+      <div className="block">
+        <TestButton
+          name="sign"
+          onClick={handleSign}
+          { ...results["sign"] } />
+
+        <TestButton
+          name="dispatch"
+          onClick={handleDispatch}
+          { ...results["dispatch"] } />
+      </div>
+
+      <div className="block">
+        <TestButton
+          name="encrypt"
+          onClick={handleEncrypt}
+          { ...results["encrypt"] } />
+
+        <TestButton
+          name="decrypt"
+          onClick={handleDecrypt}
+          { ...results["decrypt"] } />
+
+        <TestButton
+          name="signature"
+          onClick={handleSignature}
+          { ...results["signature"] } />
+      </div>
+
+      <div className="block">
+        <TestButton
+          name="signDataItem"
+          onClick={handleSignDataItem}
+          { ...results["signDataItem"] } />
+
+        <TestButton
+          name="signMessage"
+          onClick={handleSignMessage}
+          { ...results["signMessage"] } />
+
+        <TestButton
+          name="verifyMessage"
+          onClick={handleVerifyMessage}
+          { ...results["verifyMessage"] } />
+
+        <TestButton
+          name="privateHash"
+          onClick={handlePrivateHash}
+          { ...results["privateHash"] } />
+      </div>
+
+      <div className="block">
+        <pre className="results__code">{JSON.stringify(results, replacer, "  ")}</pre>
+      </div>
     </div>
   );
 }
