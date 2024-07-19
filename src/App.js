@@ -2,6 +2,7 @@ import "./App.css";
 import { Othent } from "@othent/kms";
 import Arweave from "arweave/web";
 import { useState, useEffect, useRef } from "react";
+import { DataItem } from "warp-arbundles";
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -10,10 +11,13 @@ const arweave = Arweave.init({
 });
 
 // TODO: Add a method onAuthChange to get notified about user data changes or logIn/logOut potentially with cross-tab support.
+// TODO: Add an option to globally add our own tags?
 const othent = new Othent();
 
 function App() {
   const [userDetails, setUserDetails] = useState(null);
+  const [results, setResults] = useState({});
+  const [usePlainText, setUsePlainText] = useState(true);
 
   const isInitializedRef = useRef(false);
 
@@ -37,153 +41,283 @@ function App() {
     initUserDetails();
   }, []);
 
-  const handleConnect = async () => {
-    const res = await othent.connect();
-    console.log("Connect,\n", res);
-    setUserDetails(res);
-  };
+  function getHandler(fn, options) {
+    const { name } = options;
 
-  const handleDisconnect = async () => {
-    const res = await othent.disconnect();
-    console.log("Disconnect,\n", res);
-    setUserDetails(null);
-  };
+    return async () => {
+      console.log(`${name}...`);
 
-  const handleSign = async () => {
-    const transaction = await arweave.createTransaction({
-      data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
-    });
-    transaction.addTag("Content-Type", "text/html");
-    // TODO: Why are we treating these `analyticsTags` differently?
-    const analyticsTags = [{ name: "AppName", value: "Lorimer" }];
-    const start = performance.now();
-    const res = await othent.sign(transaction, analyticsTags);
-    const end = performance.now();
-    console.log(`Sign: time taken: ${(end - start) / 1000} seconds,\n`, res);
-    const txn = await arweave.transactions.post(transaction);
-    console.log(txn);
+      try {
+        const start = performance.now();
+        const returnValue = await fn();
+        const end = performance.now();
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+        console.log(
+          `${name} (~${((end - start) / 1000).toFixed(1)}s) =`,
+          returnValue,
+        );
 
-  const handleEncrypt = async () => {
-    const data = "Encrypt this data please.";
-    const res = await othent.encrypt(data);
-    console.log("Encrypt,\n", res);
+        setResults((prevResults) => ({ ...prevResults, [name]: returnValue }));
+      } catch (err) {
+        console.error(err);
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+        setResults((prevResults) => ({ ...prevResults, [name]: { err } }));
+      }
 
-  const handleDecrypt = async () => {
-    const data = "Decrypt this data please.";
-    const encryptedData = await othent.encrypt(data);
-    const res = await othent.decrypt(encryptedData);
-    console.log("Decrypt,\n", res);
+      setUserDetails(othent.getSyncUserDetails());
+    };
+  }
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+  // CONNECT / DISCONNECT:
 
-  const handleGetActiveAddress = async () => {
-    const res = await othent.getActiveAddress();
-    console.log("getActiveAddress() =", res);
-  };
+  const handleConnect = getHandler(
+    async () => {
+      const result = await othent.connect();
 
-  const handleGetActivePublicKey = async () => {
-    const res = await othent.getActivePublicKey();
-    console.log("getActivePublicKey() =", res);
-  };
+      return { result };
+    },
+    { name: "connect" },
+  );
 
-  const handleGetAllAddresses = async () => {
-    const res = await othent.getAllAddresses();
-    console.log("getAllAddresses() =", res);
-  };
+  const handleDisconnect = getHandler(
+    async () => {
+      const result = await othent.disconnect();
 
-  const handleGetWalletNames = async () => {
-    const res = await othent.getWalletNames();
-    console.log("getWalletNames()", res);
-  };
+      return { result };
+    },
+    { name: "disconnect" },
+  );
 
-  const handleGetUserDetails = async () => {
-    const res = await othent.getUserDetails();
-    console.log("getUserDetails()", res);
-  };
+  // GET DATA (ASYNC):
 
-  const handleSignature = async () => {
-    const start = performance.now();
-    const res = await othent.signature("Sign this");
-    const end = performance.now();
-    console.log(
-      `Signature: time taken: ${(end - start) / 1000} seconds,\n`,
-      res,
-    );
+  const handleGetActiveAddress = getHandler(
+    async () => {
+      const result = await othent.getActiveAddress();
+      return { result };
+    },
+    { name: "getActiveAddress" },
+  );
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+  const handleGetActivePublicKey = getHandler(
+    async () => {
+      const result = await othent.getActivePublicKey();
+      return { result };
+    },
+    { name: "getActivePublicKey" },
+  );
 
-  const handleDispatch = async () => {
-    const transaction = await arweave.createTransaction({
-      data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
-      tags: [
-        {
-          name: "Content-Type",
-          value: "text/html",
-        },
-        {
-          name: "AppName",
-          value: "Lorimer",
-        },
-      ],
-    });
+  const handleGetAllAddresses = getHandler(
+    async () => {
+      const result = await othent.getAllAddresses();
+      return { result };
+    },
+    { name: "getAllAddresses" },
+  );
 
-    const start = performance.now();
-    const res = await othent.dispatch(
-      transaction,
-      arweave,
-      "https://turbo.ardrive.io",
-    );
-    const end = performance.now();
-    console.log(
-      `Dispatch: time taken: ${(end - start) / 1000} seconds,\n`,
-      res,
-    );
+  const handleGetWalletNames = getHandler(
+    async () => {
+      const result = await othent.getWalletNames();
+      return { result };
+    },
+    { name: "getWalletNames" },
+  );
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+  const handleGetUserDetails = getHandler(
+    async () => {
+      const result = await othent.getUserDetails();
+      return { result };
+    },
+    { name: "getUserDetails" },
+  );
 
-  const handleSignMessage = async () => {
-    const data = new TextEncoder().encode(
-      "The hash of this msg will be signed.",
-    );
-    const start = performance.now();
-    const res = await othent.signMessage(data);
-    const end = performance.now();
-    console.log(
-      `Sign Message: time taken: ${(end - start) / 1000} seconds,\n`,
-      res,
-    );
+  // GET DATA (SYNC):
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+  // TODO:
 
-  const handleVerifyMessage = async () => {
-    const data = new TextEncoder().encode(
-      "The hash of this msg will be signed.",
-    );
-    const signedMessage = await othent.signMessage(data);
-    const owner = await othent.getActivePublicKey();
-    const res = await othent.verifyMessage(data, signedMessage, owner);
-    console.log("Signature,\n", res);
+  // TX:
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+  const handleDispatch = getHandler(
+    async () => {
+      const transaction = await arweave.createTransaction({
+        data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
+        tags: [
+          {
+            name: "Content-Type",
+            value: "text/html",
+          },
+          {
+            name: "AppName",
+            value: "Othent Test Repo",
+          },
+        ],
+      });
 
-  const handleSignDataItem = async () => {
-    const data = "Example data";
-    const res = await othent.signDataItem({ data });
-    console.log("Sign Data Item,\n", res);
+      const result = await othent.dispatch(
+        transaction,
+        // TODO: Make this optional in the SDK
+        arweave,
+        "https://turbo.ardrive.io",
+      );
 
-    setUserDetails(othent.getSyncUserDetails());
-  };
+      return { result };
+    },
+    { name: "dispatch" },
+  );
+
+  // ENCRYPT/DECRYPT:
+
+  const handleSign = getHandler(
+    async () => {
+      const transaction = await arweave.createTransaction({
+        data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
+        tags: [
+          {
+            name: "Content-Type",
+            value: "text/html",
+          },
+          {
+            name: "AppName",
+            value: "Othent Test Repo",
+          },
+        ],
+      });
+
+      const result = await othent.sign(transaction);
+
+      // const txn = await arweave.transactions.post(transaction);
+
+      const isValid = await arweave.transactions.verify(transaction);
+
+      return {
+        result,
+        isValid,
+      };
+    },
+    { name: "sign" },
+  );
+
+  const handleEncrypt = getHandler(
+    async () => {
+      // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
+      // const data = { type: 'Buffer', data };
+
+      const plaintext = usePlainText
+        ? "Encrypt this text, please."
+        : new TextEncoder().encode("Encrypt this data, please.");
+
+      const result = await othent.encrypt(plaintext);
+
+      return { result, plaintext };
+    },
+    { name: "encrypt" },
+  );
+
+  const handleDecrypt = getHandler(
+    async () => {
+      const plaintext = usePlainText
+        ? "Decrypt this text, please."
+        : new TextEncoder().encode("Decrypt this data, please.");
+
+      const encryptReturn = await othent.encrypt(plaintext);
+
+      // TODO: Transform encryptReturn if usePlainText:
+      // const ciphertext = usePlainText
+      //   ? new TextDecoder().decode(encryptReturn)
+      //   : encryptReturn;
+
+      const ciphertext = encryptReturn;
+
+      const result = await othent.decrypt(ciphertext);
+
+      // const res = await othent.decrypt({
+      //   type: 'Buffer',
+      //   data: Array.from(encryptedData),
+      // });
+
+      return { result, plaintext, ciphertext };
+    },
+    { name: "decrypt" },
+  );
+
+  // SIGN:
+
+  const handleSignature = getHandler(
+    async () => {
+      const dataToSign = usePlainText
+        ? "Sign this text, please."
+        : new TextEncoder().encode("Sign this data, please.");
+
+      const result = await othent.signature(dataToSign);
+
+      // TODO: Verify signature...
+
+      return { result };
+    },
+    { name: "signature" },
+  );
+
+  const handleSignDataItem = getHandler(
+    async () => {
+      const data = "DataItem's data";
+      const result = await othent.signDataItem({ data });
+      const dataItem = new DataItem(result);
+
+      const isValid = await dataItem.isValid().catch((err) => {
+        console.log("DataItem.isValid() error =", err);
+
+        return false;
+      });
+
+      // TODO: Transform result if usePlainText
+
+      return { result, isValid };
+    },
+    { name: "signDataItem" },
+  );
+
+  const handleSignMessage = getHandler(
+    async () => {
+      // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
+
+      const data = usePlainText
+        ? "The hash of this text will be signed."
+        : new TextEncoder().encode("The hash of this data will be signed.");
+
+      const result = await othent.signMessage(data);
+
+      // TODO: Transform result if usePlainText
+
+      return { result, data };
+    },
+    { name: "signMessage" },
+  );
+
+  const handleVerifyMessage = getHandler(
+    async () => {
+      // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
+
+      const data = usePlainText
+        ? "The hash of this text will be signed."
+        : new TextEncoder().encode("The hash of this data will be signed.");
+
+      const signedData = await othent.signMessage(data);
+      const result = await othent.verifyMessage(data, signedData);
+
+      // TODO: Transform result if usePlainText
+
+      return { result, data, signedData };
+    },
+    { name: "verifyMessage" },
+  );
+
+  const handlePrivateHash = getHandler(
+    async () => {
+      const result = await othent.privateHash();
+
+      return { result };
+    },
+    { name: "privateHash" },
+  );
 
   return (
     <div className="App">
@@ -194,19 +328,20 @@ function App() {
         </span>
         <button onClick={handleConnect}>connect</button>
         <button onClick={handleDisconnect}>disconnect</button>
-        <button onClick={handleSign}>sign</button>
-        <button onClick={handleEncrypt}>encrypt</button>
-        <button onClick={handleDecrypt}>decrypt</button>
         <button onClick={handleGetActiveAddress}>getActiveAddress</button>
         <button onClick={handleGetActivePublicKey}>getActivePublicKey</button>
         <button onClick={handleGetAllAddresses}>getAllAddresses</button>
         <button onClick={handleGetWalletNames}>getWalletNames</button>
         <button onClick={handleGetUserDetails}>getUserDetails</button>
-        <button onClick={handleSignature}>signature</button>
+        <button onClick={handleSign}>sign</button>
         <button onClick={handleDispatch}>dispatch</button>
+        <button onClick={handleEncrypt}>encrypt</button>
+        <button onClick={handleDecrypt}>decrypt</button>
+        <button onClick={handleSignature}>signature</button>
+        <button onClick={handleSignDataItem}>signDataItem</button>
         <button onClick={handleSignMessage}>signMessage</button>
         <button onClick={handleVerifyMessage}>verifyMessage</button>
-        <button onClick={handleSignDataItem}>signDataItem</button>
+        <button onClick={handlePrivateHash}>privateHash</button>
       </div>
 
       {userDetails && (
