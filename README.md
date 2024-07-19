@@ -4,6 +4,10 @@ An example test repo using Othent KMS JS SDK.
 
 You can see this live on [kms-demo.othent.io](https://kms-demo.othent.io)
 
+<img src="./public/othent-kms-demo-screenshot.png" />
+
+<br />
+
 ## Running it locally:
 
 ```

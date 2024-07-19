@@ -123,6 +123,7 @@ ul {
 /* Test Button */
 
 .testButton__base {
+  position: relative;
   border: 2px solid black;
   border-radius: 4px;
   height: 40px;
@@ -144,6 +145,16 @@ ul {
 
 .testButton__indicator {
   margin-right: 0.5rem;
+}
+
+.testButton__elapsed {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  background: white;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 2px solid black;
 }
 
 /* Results */

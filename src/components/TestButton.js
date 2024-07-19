@@ -17,6 +17,11 @@ export function TestButton({ name, status, elapsed, onClick }) {
         ●
       </span>
       <span className="testButton__text">{name}</span>
+      {elapsed && (
+        <span className="testButton__elapsed">
+          {(elapsed / 1000).toFixed()}
+        </span>
+      )}
     </button>
   );
 }
