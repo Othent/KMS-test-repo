@@ -130,10 +130,6 @@ function App() {
     { name: "getUserDetails" },
   );
 
-  // GET DATA (SYNC):
-
-  // TODO:
-
   // TX:
 
   const handleDispatch = getHandler(
