@@ -1,13 +1,10 @@
-Othent KMS JS SDK Demo
-======================
+# Othent KMS JS SDK Demo
 
 An example test repo using Othent KMS JS SDK.
 
 You can see this live on [kms-demo.othent.io](https://kms-demo.othent.io)
 
-
-Running it locally:
--------------------
+## Running it locally:
 
 ```
   pnpm install

@@ -1,5 +1,5 @@
 import { Othent, uint8ArrayTob64Url } from "@othent/kms";
-import Arweave from "arweave/web";
+import Arweave from "arweave";
 import { useState, useEffect, useRef } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
