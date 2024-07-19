@@ -1,6 +1,6 @@
 import { Othent, uint8ArrayTob64Url } from "@othent/kms";
 import Arweave from "arweave";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
 
@@ -44,14 +44,16 @@ function App() {
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
-  const [{ useStrings, env, auth0Strategy, autoConnect, throwErrors }, setSettings] =
-    useState({
-      useStrings: true,
-      env: "dev",
-      auth0Strategy: "refresh-memory",
-      autoConnect: "off",
-      throwErrors: true,
-    });
+  const [
+    { useStrings, env, auth0Strategy, autoConnect, throwErrors },
+    setSettings,
+  ] = useState({
+    useStrings: true,
+    env: "dev",
+    auth0Strategy: "refresh-memory",
+    autoConnect: "off",
+    throwErrors: true,
+  });
 
   const othent = useMemo(() => {
     return new Othent({
@@ -82,28 +84,31 @@ function App() {
   }, [othent]);
 
   useEffect(() => {
-    const removeAuthEventListener = othent.addEventListener("auth", (userDetails) => {
-      console.log("onAuthChange =", userDetails);
+    const removeAuthEventListener = othent.addEventListener(
+      "auth",
+      (userDetails) => {
+        console.log("onAuthChange =", userDetails);
 
-      hasLoggedInRef.current = !!userDetails;
+        hasLoggedInRef.current = !!userDetails;
 
-      setUserDetails(userDetails);
-    });
+        setUserDetails(userDetails);
+      },
+    );
 
-    const removeErrorEventListener = othent.addEventListener("error", (error) => {
-      console.error(
-        'Unthrown error:\n',
-        error,
-      );
-    });
+    const removeErrorEventListener = throwErrors ? () => { /* NOOP */ } : othent.addEventListener(
+      "error",
+      (error) => {
+        console.error("Unthrown error:\n", error);
+      },
+    );
 
     return () => {
       removeAuthEventListener();
       removeErrorEventListener();
-    }
+    };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [othent]);
+  }, [othent, throwErrors]);
 
   function getHandler(fn, options) {
     const { name } = options;
@@ -140,7 +145,7 @@ function App() {
       } catch (err) {
         const elapsed = performance.now() - start;
 
-        console.error(err);
+        console.error(`${ name } (${(elapsed / 1000).toFixed(1)}s) =\n`, err);
 
         setResults((prevResults) => ({
           ...prevResults,
