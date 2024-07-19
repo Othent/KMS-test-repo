@@ -44,20 +44,23 @@ function App() {
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
-  const [{ useStrings, env, auth0Strategy, autoConnect }, setSettings] = useState({
-    useStrings: true,
-    env: "dev",
-    auth0Strategy: "refresh-memory",
-    autoConnect: "eager",
-  });
+  const [{ useStrings, env, auth0Strategy, autoConnect, throwErrors }, setSettings] =
+    useState({
+      useStrings: true,
+      env: "dev",
+      auth0Strategy: "refresh-memory",
+      autoConnect: "off",
+      throwErrors: false,
+    });
 
   const othent = useMemo(() => {
     return new Othent({
       ...(env === "dev" ? DEV_OTHENT_CONFIG : {}),
       auth0Strategy,
       autoConnect,
+      throwErrors,
     });
-  }, [env, auth0Strategy, autoConnect]);
+  }, [env, auth0Strategy, autoConnect, throwErrors]);
 
   // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
   // project in DEV mode with hot reloading:
@@ -75,7 +78,7 @@ function App() {
       console.log("connect() error:", err);
     }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [othent]);
 
   const handleAuthChange = useCallback((userDetails) => {
@@ -89,7 +92,7 @@ function App() {
   useEffect(() => {
     return othent.addEventListener("auth", handleAuthChange);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [othent, handleAuthChange]);
 
   function getHandler(fn, options) {
