@@ -45,7 +45,7 @@ function App() {
     const { name } = options;
 
     return async () => {
-      console.log(`${name}...`);
+      console.group(`${name}...`);
 
       try {
         const start = performance.now();
@@ -63,6 +63,8 @@ function App() {
 
         setResults((prevResults) => ({ ...prevResults, [name]: { err } }));
       }
+
+      console.groupEnd();
 
       setUserDetails(othent.getSyncUserDetails());
     };
@@ -259,7 +261,7 @@ function App() {
       const dataItem = new DataItem(result);
 
       const isValid = await dataItem.isValid().catch((err) => {
-        console.log("DataItem.isValid() error =", err);
+        console.error("DataItem.isValid() error =", err);
 
         return false;
       });
