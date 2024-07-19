@@ -1,6 +1,6 @@
 import { Othent, uint8ArrayTob64Url } from "@othent/kms";
 import Arweave from "arweave";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
 
@@ -46,40 +46,44 @@ function App() {
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
-  const [{ mode, autoInit, useStrings, auth0Strategy }, setSettings] = useState(
+  const [{ env, useStrings, auth0Strategy }, setSettings] = useState(
     {
-      mode: "dev",
-      autoInit: true,
+      env: "dev",
+      // autoConnect: eager | auto | off
       useStrings: true,
       auth0Strategy: "refresh-memory",
     },
   );
 
-  const isInitializingRef = useRef(false);
+  // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
+  // project in DEV mode with hot reloading:
+
+  const hasLoggedInRef = useRef(false);
 
   useEffect(() => {
-    async function initUserDetails() {
-      if (isInitializingRef.current) return;
+    if (!hasLoggedInRef.current) return;
 
-      isInitializingRef.current = true;
+    setUserDetails(null);
 
-      setUserDetails(null);
-
-      try {
-        const initialUserDetails = await othent.connect();
-
-        // console.log("initialUserDetails =", initialUserDetails);
-
-        setUserDetails(initialUserDetails);
-      } catch (err) {
-        console.log("connect() error:", err);
-      }
-
-      isInitializingRef.current = false;
+    try {
+      othent.connect();
+    } catch (err) {
+      console.log("connect() error:", err);
     }
 
-    if (autoInit) initUserDetails();
-  }, [othent, autoInit]);
+  }, [othent]);
+
+  const handleAuthChange = useCallback((userDetails) => {
+    console.log('onAuthChange =', userDetails);
+
+    hasLoggedInRef.current = !!userDetails;
+
+    setUserDetails(userDetails);
+  }, []);
+
+  useEffect(() => {
+    return othent.addEventListener('auth', handleAuthChange);
+  }, [othent, handleAuthChange])
 
   function getHandler(fn, options) {
     const { name } = options;
@@ -129,8 +133,6 @@ function App() {
       }
 
       console.groupEnd();
-
-      setUserDetails(othent.getSyncUserDetails());
     };
   }
 
