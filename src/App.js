@@ -1,6 +1,6 @@
 import { Othent, uint8ArrayTob64Url } from "@othent/kms";
 import Arweave from "arweave";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
 
@@ -30,30 +30,34 @@ function replacer(key, value) {
   return uint8ArrayTob64Url(uint8Array);
 }
 
-// TODO: Add a method onAuthChange to get notified about user data changes or logIn/logOut potentially with cross-tab support.
-const othent = new Othent();
+const DEV_OTHENT_CONFIG = {
+  auth0Domain: "gmzcodes-test.eu.auth0.com",
+  auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+  auth0Strategy: "refresh-localstorage",
+  serverBaseURL: "http://localhost:3010",
+};
 
-// TODO: Allow re-init with init function that accept constructor signature...
-// export const DEFAULT_OTHENT_CONFIG: OthentConfig = {
-//   auth0Domain: "gmzcodes-test.eu.auth0.com",
-//   auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
-//   auth0Strategy: "refresh-localstorage",
-//   serverBaseURL: "http://localhost:3010",
-// };
+// TODO: Cross-tab support.
 
 function App() {
   const [showDetailsJSON, setShowDetailsJSON] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
-  const [{ env, useStrings, auth0Strategy }, setSettings] = useState(
-    {
-      env: "dev",
-      // autoConnect: eager | auto | off
-      useStrings: true,
-      auth0Strategy: "refresh-memory",
-    },
-  );
+  const [{ useStrings, env, auth0Strategy, autoConnect }, setSettings] = useState({
+    useStrings: true,
+    env: "dev",
+    auth0Strategy: "refresh-memory",
+    autoConnect: "eager",
+  });
+
+  const othent = useMemo(() => {
+    return new Othent({
+      ...(env === "dev" ? DEV_OTHENT_CONFIG : {}),
+      auth0Strategy,
+      autoConnect,
+    });
+  }, [env, auth0Strategy, autoConnect]);
 
   // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
   // project in DEV mode with hot reloading:
@@ -71,10 +75,11 @@ function App() {
       console.log("connect() error:", err);
     }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [othent]);
 
   const handleAuthChange = useCallback((userDetails) => {
-    console.log('onAuthChange =', userDetails);
+    console.log("onAuthChange =", userDetails);
 
     hasLoggedInRef.current = !!userDetails;
 
@@ -82,8 +87,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    return othent.addEventListener('auth', handleAuthChange);
-  }, [othent, handleAuthChange])
+    return othent.addEventListener("auth", handleAuthChange);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [othent, handleAuthChange]);
 
   function getHandler(fn, options) {
     const { name } = options;
