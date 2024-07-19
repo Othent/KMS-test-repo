@@ -49,9 +49,9 @@ function App() {
     setSettings,
   ] = useState({
     useStrings: true,
-    env: "dev",
-    auth0Strategy: "refresh-memory",
-    autoConnect: "off",
+    env: "production",
+    auth0Strategy: "iframe-cookies",
+    autoConnect: "lazy",
     throwErrors: true,
   });
 
@@ -61,6 +61,8 @@ function App() {
       auth0Strategy,
       autoConnect,
       throwErrors,
+      appName: "Othent KMS Test Repo",
+      appVersion: Othent.walletVersion,
     });
   }, [env, auth0Strategy, autoConnect, throwErrors]);
 
@@ -95,12 +97,13 @@ function App() {
       },
     );
 
-    const removeErrorEventListener = throwErrors ? () => { /* NOOP */ } : othent.addEventListener(
-      "error",
-      (error) => {
-        console.error("Unthrown error:\n", error);
-      },
-    );
+    const removeErrorEventListener = throwErrors
+      ? () => {
+          /* NOOP */
+        }
+      : othent.addEventListener("error", (error) => {
+          console.error("Unthrown error:\n", error);
+        });
 
     return () => {
       removeAuthEventListener();
@@ -145,7 +148,7 @@ function App() {
       } catch (err) {
         const elapsed = performance.now() - start;
 
-        console.error(`${ name } (${(elapsed / 1000).toFixed(1)}s) =\n`, err);
+        console.error(`${name} (${(elapsed / 1000).toFixed(1)}s) =\n`, err);
 
         setResults((prevResults) => ({
           ...prevResults,
@@ -229,21 +232,14 @@ function App() {
     async () => {
       const transaction = await arweave.createTransaction({
         data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
-        tags: [
-          {
-            name: "Content-Type",
-            value: "text/html",
-          },
-          {
-            name: "AppName",
-            value: "Othent Test Repo",
-          },
-        ],
       });
 
-      const result = await othent.dispatch(transaction);
+      transaction.addTag("Content-Type", "text/html");
 
-      return { result };
+      const result = await othent.dispatch(transaction);
+      const transactionURL = `https://viewblock.io/arweave/tx/${result.id}`;
+
+      return { result, transactionURL };
     },
     { name: "dispatch" },
   );
@@ -254,16 +250,6 @@ function App() {
     async () => {
       const transaction = await arweave.createTransaction({
         data: '<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>',
-        tags: [
-          {
-            name: "Content-Type",
-            value: "text/html",
-          },
-          {
-            name: "AppName",
-            value: "Othent Test Repo",
-          },
-        ],
       });
 
       const result = await othent.sign(transaction);
