@@ -1,6 +1,7 @@
 body {
   font-family: monospace;
   overflow-y: scroll;
+  padding-bottom: calc(1rem + 48px);
 }
 
 button {
@@ -11,6 +12,8 @@ button {
   padding: 0;
 }
 
+h1,
+h2,
 p,
 pre {
   margin: 0;
@@ -58,6 +61,31 @@ ul {
   margin: 0 0 0.5rem 0;
 }
 
+.header__testAllButton,
+.header__settingsButton {
+  position: fixed;
+  bottom: 1rem;
+  border: 2px solid black;
+  background: white;
+  font-size: 1.5rem;
+  border-radius: 4px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.header__testAllButton {
+  right: 1rem;
+}
+
+.header__settingsButton {
+  right: calc(2rem + 48px);
+}
+
 /* User Card */
 
 .userCard__base {
@@ -97,13 +125,8 @@ ul {
   flex: 0 0 48px;
   width: 48px;
   height: auto;
-  border-radius: 0;
-  border: 0;
   border-left: 2px solid black;
-  background: transparent;
-  color: black;
   font-size: 1.5rem;
-  padding: 0;
   cursor: zoom-in;
 }
 

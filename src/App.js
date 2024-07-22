@@ -3,6 +3,7 @@ import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
+import { UserCard } from "./components/UserCard";
 
 import "./App.css";
 
@@ -12,7 +13,7 @@ const arweave = Arweave.init({
   port: 443,
 });
 
-function replacer(key, value) {
+function replacer(_, value) {
   let uint8Array;
 
   if (
@@ -37,20 +38,30 @@ const DEV_OTHENT_CONFIG = {
   serverBaseURL: "http://localhost:3010",
 };
 
-// TODO: Cross-tab support.
-
 function App() {
   const [showDetailsJSON, setShowDetailsJSON] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
   const [
-    { useStrings, env, auth0Strategy, autoConnect, throwErrors },
+    {
+      // TODO: If `useStrings = true` we or the library should also transform all results to B64UrlEncoded strings rather than Uint8Array:
+      // OLD BACKEND + OLD SDK: Works with `string` inputs, doesn't work with `TextEncoder` inputs
+      // OLD BACKEND + NEW SDK: Works with `string` inputs, works with `TextEncoder` inputs.
+      useStrings,
+      postTransactions,
+      env,
+      auth0Strategy,
+      autoConnect,
+      throwErrors,
+    },
+    // TODO: Add UI for settings:
     setSettings,
   ] = useState({
-    useStrings: true,
+    useStrings: false,
+    postTransactions: false,
     env: "production",
-    auth0Strategy: "iframe-cookies",
+    auth0Strategy: "refresh-memory",
     autoConnect: "lazy",
     throwErrors: true,
   });
@@ -254,13 +265,17 @@ function App() {
 
       const result = await othent.sign(transaction);
 
-      // TODO: Add an option to post the transaction...
-      // const txn = await arweave.transactions.post(transaction);
+      let postResult = null;
+
+      if (postTransactions) {
+        postResult = await arweave.transactions.post(transaction);
+      }
 
       const isValid = await arweave.transactions.verify(transaction);
 
       return {
         result,
+        postResult,
         isValid,
       };
     },
@@ -269,9 +284,6 @@ function App() {
 
   const handleEncrypt = getHandler(
     async () => {
-      // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
-      // const data = { type: 'Buffer', data };
-
       const plaintext = useStrings
         ? "Encrypt this text, please."
         : new TextEncoder().encode("Encrypt this data, please.");
@@ -291,15 +303,17 @@ function App() {
 
       const encryptReturn = await othent.encrypt(plaintext);
 
-      // TODO: Transform encryptReturn if useStrings:
-      // const ciphertext = useStrings
-      //   ? new TextDecoder().decode(encryptReturn)
-      //   : encryptReturn;
-
       const ciphertext = encryptReturn;
+
+      // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
+      // (not a regular one) `string` directly:
+      // const ciphertext = useStrings
+      //   ? uint8ArrayTob64Url(encryptReturn)
+      //   : encryptReturn;
 
       const result = await othent.decrypt(ciphertext);
 
+      // TODO: Do we need to support this old (undocumented) format or can we just list it as a breaking change?
       // const res = await othent.decrypt({
       //   type: 'Buffer',
       //   data: Array.from(encryptedData),
@@ -324,7 +338,9 @@ function App() {
 
       const result = await othent.signature(dataToSign);
 
-      // TODO: Verify signature...
+      // This won't work.
+      // TODO: Do we need to "re-implement" most of `verifyMessage()` in userland to verify?
+      // const isValid = await othent.verifyMessage(dataToSign, result);
 
       return { result };
     },
@@ -335,15 +351,14 @@ function App() {
     async () => {
       const data = "DataItem's data";
       const result = await othent.signDataItem({ data });
-      const dataItem = new DataItem(result);
+      const dataItem = new DataItem(Buffer.from(result));
 
+      // TODO: Not working:
       const isValid = await dataItem.isValid().catch((err) => {
         console.error("DataItem.isValid() error =", err);
 
         return false;
       });
-
-      // TODO: Transform result if useStrings
 
       return { result, isValid };
     },
@@ -352,15 +367,11 @@ function App() {
 
   const handleSignMessage = getHandler(
     async () => {
-      // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
-
       const data = useStrings
         ? "The hash of this text will be signed."
         : new TextEncoder().encode("The hash of this data will be signed.");
 
       const result = await othent.signMessage(data);
-
-      // TODO: Transform result if useStrings
 
       return { result, data };
     },
@@ -369,16 +380,12 @@ function App() {
 
   const handleVerifyMessage = getHandler(
     async () => {
-      // TODO: The TextEncoder version doesn't work with the old backend and SDK, but it does with the old backed and new SDK.
-
       const data = useStrings
         ? "The hash of this text will be signed."
         : new TextEncoder().encode("The hash of this data will be signed.");
 
       const signedData = await othent.signMessage(data);
       const result = await othent.verifyMessage(data, signedData);
-
-      // TODO: Transform result if useStrings
 
       return { result, data, signedData };
     },
@@ -387,7 +394,11 @@ function App() {
 
   const handlePrivateHash = getHandler(
     async () => {
-      const result = await othent.privateHash();
+      const data = useStrings
+        ? "Data to hash."
+        : new TextEncoder().encode("Data to hash.");
+
+      const result = await othent.privateHash(data);
 
       return { result };
     },
@@ -441,40 +452,63 @@ function App() {
     { name: "getPermissions" },
   );
 
+  // AUTO-TEST WIZARD:
+
+  const handleTestAll = async () => {
+    const methodsUnderTest = [
+      handleConnect,
+      handleGetActiveAddress,
+      handleGetActivePublicKey,
+      handleGetAllAddresses,
+      handleGetWalletNames,
+      handleGetUserDetails,
+      // handleGetSyncActiveAddress,
+      // handleGetSyncActivePublicKey,
+      // handleGetSyncAllAddresses,
+      // handleGetSyncWalletNames,
+      // handleGetSyncUserDetails,
+      handleSign,
+      handleDispatch,
+      handleEncrypt,
+      handleDecrypt,
+      handleSignature,
+      handleSignDataItem,
+      handleSignMessage,
+      handleVerifyMessage,
+      handlePrivateHash,
+      handleWalletName,
+      handleWalletVersion,
+      handleConfig,
+      handleGetArweaveConfig,
+      handleGetPermissions,
+    ];
+
+    for (const methodFn of methodsUnderTest) {
+      await methodFn();
+    }
+  };
+
   return (
     <div className="app">
-      <div className="header__base">
+      <header className="header__base">
         <h1 className="header__title">Othent KMS JS SDK Demo</h1>
         <p>Check the DevTools Console for additional information.</p>
+        <UserCard
+          userDetails={userDetails}
+          showDetailsJSON={showDetailsJSON}
+          setShowDetailsJSON={setShowDetailsJSON}
+        />
 
-        <div className="userCard__base">
-          <img
-            className="userCard__img"
-            src={userDetails?.picture || "https://othent.io/user.png"}
-            alt={userDetails?.name || ""}
-          />
-
-          <ul className="userCard__list">
-            <li>{userDetails?.name || "-"}</li>
-            <li>{userDetails?.email || "-"}</li>
-            <li>{userDetails?.walletAddress || "-".repeat(43)}</li>
-          </ul>
-
-          <button
-            className="userCard__expandButton"
-            onClick={() => setShowDetailsJSON((v) => !v)}
-            aria-expanded={showDetailsJSON ? "true" : "false"}
-          >
-            {showDetailsJSON ? "×" : "🩻"}
-          </button>
-        </div>
-
-        {showDetailsJSON && userDetails && (
-          <pre className="userCard__code">
-            {JSON.stringify(userDetails, null, "  ")}
-          </pre>
-        )}
-      </div>
+        <button className="header__testAllButton" onClick={handleTestAll}>
+          🧙‍♂️
+        </button>
+        <button
+          className="header__settingsButton"
+          onClick={() => alert("Not implemented yet.")}
+        >
+          ⚙️
+        </button>
+      </header>
 
       <div className="block">
         <TestButton
