@@ -1,6 +1,6 @@
 import { Othent, uint8ArrayTob64Url } from "@othent/kms";
 import Arweave from "arweave";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
 import { UserCard } from "./components/UserCard";
@@ -96,25 +96,33 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [othent]);
 
+  // We need to use `useCallback` here as React will call the `useEffect` below twice in development mode, and we don't
+  // want to add duplicate event listeners. However, if we define the listener function inside `useEffect`, two
+  // different instances will be created an the `EventListenerHandler` won't be able to see they are the same.
+
+  const handleAuthChange = useCallback((userDetails) => {
+    console.log("onAuthChange =", userDetails);
+
+    hasLoggedInRef.current = !!userDetails;
+
+    setUserDetails(userDetails);
+  }, []);
+
+  const handleError = useCallback((error) => {
+    console.error("Unthrown error:\n", error);
+  }, []);
+
   useEffect(() => {
     const removeAuthEventListener = othent.addEventListener(
       "auth",
-      (userDetails) => {
-        console.log("onAuthChange =", userDetails);
-
-        hasLoggedInRef.current = !!userDetails;
-
-        setUserDetails(userDetails);
-      },
+      handleAuthChange,
     );
 
     const removeErrorEventListener = throwErrors
       ? () => {
           /* NOOP */
         }
-      : othent.addEventListener("error", (error) => {
-          console.error("Unthrown error:\n", error);
-        });
+      : othent.addEventListener("error", handleError);
 
     return () => {
       removeAuthEventListener();
