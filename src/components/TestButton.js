@@ -17,11 +17,11 @@ export function TestButton({ name, status, elapsed, onClick }) {
         ●
       </span>
       <span className="testButton__text">{name}</span>
-      {elapsed && (
+      {typeof elapsed === "number" ? (
         <span className="testButton__elapsed">
           {(elapsed / 1000).toFixed()}
         </span>
-      )}
+      ) : null}
     </button>
   );
 }

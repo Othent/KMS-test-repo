@@ -54,6 +54,8 @@ function App() {
       auth0Strategy,
       autoConnect,
       throwErrors,
+      persistCookie,
+      persistLocalStorage,
     },
     // TODO: Add UI for settings:
     setSettings,
@@ -61,9 +63,11 @@ function App() {
     useStrings: false,
     postTransactions: false,
     env: "production",
-    auth0Strategy: "refresh-memory",
+    auth0Strategy: "refresh-localstorage",
     autoConnect: "lazy",
     throwErrors: true,
+    persistCookie: false,
+    persistLocalStorage: true,
   });
 
   const othent = useMemo(() => {
@@ -74,24 +78,48 @@ function App() {
       throwErrors,
       appName: "Othent KMS Test Repo",
       appVersion: Othent.walletVersion,
+      persistCookie,
+      persistLocalStorage,
     });
-  }, [env, auth0Strategy, autoConnect, throwErrors]);
+  }, [
+    env,
+    auth0Strategy,
+    autoConnect,
+    throwErrors,
+    persistCookie,
+    persistLocalStorage,
+  ]);
 
   // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
-  // project in DEV mode with hot reloading:
+  // project in DEV mode with hot reloading. It also makes sure only one of the two instances of `Othent` that will
+  // be created, due to React running in Development mode, is actually listening for `storage` events.
 
   const hasLoggedInRef = useRef(false);
 
   useEffect(() => {
+    const cleanupFn = othent.init();
+
     if (!hasLoggedInRef.current) return;
 
     setUserDetails(null);
 
-    try {
-      othent.connect();
-    } catch (err) {
-      console.log("connect() error:", err);
+    async function reconnectOnHotReload() {
+      console.groupCollapsed(`Reconnecting due to hot reloading...`);
+
+      try {
+        // This won't work if `auth0Strategy = "refresh-memory"`.
+
+        await othent.connect();
+      } catch (err) {
+        console.log("connect() error:", err);
+      }
+
+      console.groupEnd();
     }
+
+    reconnectOnHotReload();
+
+    return cleanupFn;
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [othent]);
@@ -100,16 +128,17 @@ function App() {
   // want to add duplicate event listeners. However, if we define the listener function inside `useEffect`, two
   // different instances will be created an the `EventListenerHandler` won't be able to see they are the same.
 
-  const handleAuthChange = useCallback((userDetails) => {
-    console.log("onAuthChange =", userDetails);
+  const handleAuthChange = useCallback((userDetails, isAuthenticated) => {
+    console.log("onAuthChange =", { userDetails, isAuthenticated });
 
-    hasLoggedInRef.current = !!userDetails;
+    // This is only here due to hot reloading in development:
+    hasLoggedInRef.current = hasLoggedInRef.current || isAuthenticated;
 
     setUserDetails(userDetails);
   }, []);
 
   const handleError = useCallback((error) => {
-    console.error("Unthrown error:\n", error);
+    console.error("onError =", error);
   }, []);
 
   useEffect(() => {
@@ -198,9 +227,27 @@ function App() {
     async () => {
       const result = await othent.disconnect();
 
-      return { result };
+      return { result, isValid: true };
     },
     { name: "disconnect" },
+  );
+
+  const handleRequireAuth = getHandler(
+    async () => {
+      const result = await othent.requireAuth();
+
+      return { result, isValid: true };
+    },
+    { name: "requireAuth" },
+  );
+
+  const handleIsAuthenticated = getHandler(
+    async () => {
+      const result = othent.isAuthenticated;
+
+      return { result, isValid: typeof result === "boolean" };
+    },
+    { name: "isAuthenticated" },
   );
 
   // GET DATA (ASYNC):
@@ -320,12 +367,6 @@ function App() {
       //   : encryptReturn;
 
       const result = await othent.decrypt(ciphertext);
-
-      // TODO: Do we need to support this old (undocumented) format or can we just list it as a breaking change?
-      // const res = await othent.decrypt({
-      //   type: 'Buffer',
-      //   data: Array.from(encryptedData),
-      // });
 
       const isValid =
         result ===
@@ -465,6 +506,8 @@ function App() {
   const handleTestAll = async () => {
     const methodsUnderTest = [
       handleConnect,
+      handleRequireAuth,
+      handleIsAuthenticated,
       handleGetActiveAddress,
       handleGetActivePublicKey,
       handleGetAllAddresses,
@@ -518,109 +561,121 @@ function App() {
         </button>
       </header>
 
-      <div className="block">
+      <div className="block testButtons__grid">
         <TestButton
-          name="connect"
+          name="connect()"
           onClick={handleConnect}
           {...results["connect"]}
         />
 
         <TestButton
-          name="disconnect"
+          name="disconnect()"
           onClick={handleDisconnect}
           {...results["disconnect"]}
         />
+
+        <TestButton
+          name="requireAuth()"
+          onClick={handleRequireAuth}
+          {...results["requireAuth"]}
+        />
+
+        <TestButton
+          name="isAuthenticated"
+          onClick={handleIsAuthenticated}
+          {...results["isAuthenticated"]}
+        />
       </div>
 
-      <div className="block">
+      <div className="block testButtons__grid">
         <TestButton
-          name="getActiveAddress"
+          name="getActiveAddress()"
           onClick={handleGetActiveAddress}
           {...results["getActiveAddress"]}
         />
 
         <TestButton
-          name="getActivePublicKey"
+          name="getActivePublicKey()"
           onClick={handleGetActivePublicKey}
           {...results["getActivePublicKey"]}
         />
 
         <TestButton
-          name="getAllAddresses"
+          name="getAllAddresses()"
           onClick={handleGetAllAddresses}
           {...results["getAllAddresses"]}
         />
 
         <TestButton
-          name="getWalletNames"
+          name="getWalletNames()"
           onClick={handleGetWalletNames}
           {...results["getWalletNames"]}
         />
 
         <TestButton
-          name="getUserDetails"
+          name="getUserDetails()"
           onClick={handleGetUserDetails}
           {...results["getUserDetails"]}
         />
       </div>
 
-      <div className="block">
-        <TestButton name="sign" onClick={handleSign} {...results["sign"]} />
+      <div className="block testButtons__grid">
+        <TestButton name="sign()" onClick={handleSign} {...results["sign"]} />
 
         <TestButton
-          name="dispatch"
+          name="dispatch()"
           onClick={handleDispatch}
           {...results["dispatch"]}
         />
       </div>
 
-      <div className="block">
+      <div className="block testButtons__grid">
         <TestButton
-          name="encrypt"
+          name="encrypt()"
           onClick={handleEncrypt}
           {...results["encrypt"]}
         />
 
         <TestButton
-          name="decrypt"
+          name="decrypt()"
           onClick={handleDecrypt}
           {...results["decrypt"]}
         />
       </div>
 
-      <div className="block">
+      <div className="block testButtons__grid">
         <TestButton
-          name="signature"
+          name="signature()"
           onClick={handleSignature}
           {...results["signature"]}
         />
 
         <TestButton
-          name="signDataItem"
+          name="signDataItem()"
           onClick={handleSignDataItem}
           {...results["signDataItem"]}
         />
 
         <TestButton
-          name="signMessage"
+          name="signMessage()"
           onClick={handleSignMessage}
           {...results["signMessage"]}
         />
 
         <TestButton
-          name="verifyMessage"
+          name="verifyMessage()"
           onClick={handleVerifyMessage}
           {...results["verifyMessage"]}
         />
 
         <TestButton
-          name="privateHash"
+          name="privateHash()"
           onClick={handlePrivateHash}
           {...results["privateHash"]}
         />
       </div>
 
-      <div className="block">
+      <div className="block testButtons__grid">
         <TestButton
           name="walletName"
           onClick={handleWalletName}
@@ -640,13 +695,13 @@ function App() {
         />
 
         <TestButton
-          name="getArweaveConfig"
+          name="getArweaveConfig()"
           onClick={handleGetArweaveConfig}
           {...results["getArweaveConfig"]}
         />
 
         <TestButton
-          name="getPermissions"
+          name="getPermissions()"
           onClick={handleGetPermissions}
           {...results["getPermissions"]}
         />

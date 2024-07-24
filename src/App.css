@@ -1,7 +1,6 @@
 body {
   font-family: monospace;
   overflow-y: scroll;
-  padding-bottom: calc(1rem + 48px);
 }
 
 button {
@@ -36,14 +35,14 @@ ul {
 
 .app {
   min-height: 100dvh;
+  max-width: 976px;
+  margin: 0 auto;
+  padding-bottom: calc(1rem + 48px);
 }
 
 .block {
   padding: 1rem;
   border-top: 2px solid rgba(0, 0, 0, 0.125);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
 }
 
 /* Header */
@@ -64,6 +63,7 @@ ul {
 .header__testAllButton,
 .header__settingsButton {
   position: fixed;
+  z-index: 1;
   bottom: 1rem;
   border: 2px solid black;
   background: white;
@@ -145,12 +145,18 @@ ul {
 
 /* Test Button */
 
+.testButtons__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
+  gap: 1rem;
+}
+
 .testButton__base {
   position: relative;
   border: 2px solid black;
   border-radius: 4px;
   height: 40px;
-  width: 176px;
+  width: 100%;
   cursor: pointer;
   font-weight: bold;
   padding: 0 0.5rem;
