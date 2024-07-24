@@ -43,9 +43,14 @@ function App() {
   const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
+  const sortedResults = useMemo(() => {
+    const sortedResultsArray = Object.values(results).sort((a, b) => b.timestamp - a.timestamp);
+
+    return sortedResultsArray.length === 0 ? [{}] : sortedResultsArray;
+  }, [results]);
+
   const [
     {
-      // TODO: If `useStrings = true` we or the library should also transform all results to B64UrlEncoded strings rather than Uint8Array:
       // OLD BACKEND + OLD SDK: Works with `string` inputs, doesn't work with `TextEncoder` inputs
       // OLD BACKEND + NEW SDK: Works with `string` inputs, works with `TextEncoder` inputs.
       useStrings,
@@ -168,9 +173,11 @@ function App() {
       setResults((prevResults) => ({
         ...prevResults,
         [name]: {
-          ...prevResults[name],
+          name,
           status: "loading",
           elapsed: undefined,
+          timestamp: Date.now(),
+          ...prevResults[name],
         },
       }));
 
@@ -187,10 +194,12 @@ function App() {
         setResults((prevResults) => ({
           ...prevResults,
           [name]: {
-            ...returnValue,
+            name,
             status:
               returnValue.isValid ?? !!returnValue.result ? "ok" : "error",
             elapsed,
+            timestamp: Date.now(),
+            ...returnValue,
           },
         }));
       } catch (err) {
@@ -202,8 +211,10 @@ function App() {
           ...prevResults,
           [name]: {
             err,
+            name,
             status: "error",
             elapsed,
+            timestamp: Date.now(),
           },
         }));
       }
@@ -708,9 +719,11 @@ function App() {
       </div>
 
       <div className="block">
-        <pre className="results__code">
-          {JSON.stringify(results, replacer, "  ")}
-        </pre>
+        { sortedResults.map((result) => (
+          <pre className="results__code">
+            {JSON.stringify(result, replacer, "  ")}
+          </pre>
+        )) }
       </div>
     </div>
   );

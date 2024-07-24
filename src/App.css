@@ -195,3 +195,7 @@ ul {
   overflow-x: scroll;
   width: 100%;
 }
+
+.results__code + .results__code {
+  margin-top: 1rem;
+}
