@@ -31,8 +31,12 @@ To run it with a local `KeyManagementService` instance:
 
 - [x] Playground inline inputs / log.
 - [x] Playground settings form.
-- [ ] Test with data from old arweave.
+- [x] Test with data from old arweave:
+      - encrypt (old) => decrypt (new) works fine.
+      - signMessage (old) => verifyMessage (new) works fine.
 - [ ] Add inline inputs for results / outputs too.
+- [ ] Persist input values in localStorage.
 - [ ] Improve the LogItem component at the end.
+- [ ] Create new TextInput and SelectInput components.
 - [ ] Add indicators of the data type (b64, etc).
 
