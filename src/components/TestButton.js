@@ -1,9 +1,19 @@
-export function TestButton({ name, status, elapsed, onClick }) {
-  let className = "testButton__base";
+import { useState } from "react";
+
+export function TestButton({ name, status, elapsed, onClick, children}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  let rootClassName = "testButton__base";
+
+  if (isExpanded) {
+    rootClassName += " testButton--isExpanded"
+  }
+
+  let buttonClassName = "testButton__button";
   let color = "#CCC";
 
   if (status === "loading") {
-    className += " testButton--isLoading";
+    buttonClassName += " testButton--isLoading";
     color = "#000";
   } else if (status === "ok") {
     color = "#0B3";
@@ -12,16 +22,35 @@ export function TestButton({ name, status, elapsed, onClick }) {
   }
 
   return (
-    <button className={className} onClick={onClick}>
-      <span className="testButton__indicator" style={{ color }}>
-        ●
-      </span>
-      <span className="testButton__text">{name}</span>
-      {typeof elapsed === "number" ? (
-        <span className="testButton__elapsed">
-          {(elapsed / 1000).toFixed()}
-        </span>
-      ) : null}
-    </button>
+    <div className={ rootClassName }>
+      <div className="testButton__buttonWrapper">
+        <button className={buttonClassName} onClick={onClick}>
+          <span className="testButton__indicator" style={{ color }}>
+            ●
+          </span>
+
+          <span className="testButton__text">{name}</span>
+        </button>
+
+        {typeof elapsed === "number" ? (
+          <span className="testButton__elapsed" title="Last run's execution time">
+            {(elapsed / 1000).toFixed()}
+          </span>
+        ) : null}
+
+        {!!children ? (
+          <button
+            className="testButton__expandButton"
+            title="See input form and execution details"
+            onClick={ () => setIsExpanded(v => !v)}>
+            { isExpanded ? '×' : '+' }
+          </button>
+        ) : null}
+      </div>
+
+      { isExpanded ? (
+        <div className="testButton__content">{ children }</div>
+      ) : null }
+    </div>
   );
 }

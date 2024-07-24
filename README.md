@@ -8,6 +8,7 @@ You can see this live on [kms-demo.othent.io](https://kms-demo.othent.io)
 
 <br />
 
+
 ## Running it locally:
 
 ```
@@ -22,3 +23,16 @@ To run it with a local `KeyManagementService` instance:
 2. Inside `@othent/kms`, run `pnpm dev`.
 
 3. Inside this repo, run `bun link @othent/kms`. See [`bun link`](https://bun.sh/docs/cli/link).
+
+<br />
+
+
+## This branch / PR:
+
+- [x] Playground inline inputs / log.
+- [x] Playground settings form.
+- [ ] Test with data from old arweave.
+- [ ] Add inline inputs for results / outputs too.
+- [ ] Improve the LogItem component at the end.
+- [ ] Add indicators of the data type (b64, etc).
+
