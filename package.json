@@ -20,7 +20,7 @@
     "build": "react-scripts build",
     "dev": "pnpm start",
     "clean": "rm -rf build",
-    "nuke": "clean && rm -rf node_modules pnpm-lock.yaml bun.lockb",
+    "nuke": "pnpm clean && rm -rf node_modules pnpm-lock.yaml bun.lockb",
     "test": "bun test",
     "prettier": "prettier --write .",
     "prepare": "husky && husky install"
