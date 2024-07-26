@@ -4,8 +4,8 @@ export function LinkField({ label, value, hasError }) {
       <a
         className="input__input"
         href={value}
-        aria-invalid={hasError || undefined}
         target="_blank"
+        rel="noreferrer noopener"
       >
         {value}
       </a>

@@ -82,7 +82,7 @@ function App() {
       persistLocalStorage,
     },
     // TODO: Add UI for settings:
-    setSettings,
+    // setSettings,
   ] = useState({
     useStrings: false,
     postTransactions: false,
