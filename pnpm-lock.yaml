@@ -8,8 +8,8 @@ importers:
   .:
     dependencies:
       "@othent/kms":
-        specifier: ^1.0.11
-        version: 1.0.12
+        specifier: ^2.0.0-beta.3
+        version: 2.0.0-beta.3
       "@testing-library/jest-dom":
         specifier: ^5.17.0
         version: 5.17.0
@@ -1635,10 +1635,10 @@ packages:
       }
     engines: { node: ">= 8" }
 
-  "@othent/kms@1.0.12":
+  "@othent/kms@2.0.0-beta.3":
     resolution:
       {
-        integrity: sha512-0T4DSqjEI9Lh0642Of/cGEvl2bx80ZsIIKJoHijAup0So2/o0rfirkxttmWfHOySWxLJ1PEwzoC+iflF5MFPzg==,
+        integrity: sha512-Dsq9/Eblc/6MVhvQEZPzUZo/L53zKupepbSrEJdWTPuQIV6viBOqeNFZ6SJHibXulUrKYxXhTOLSxPB6ICZD8A==,
       }
 
   "@pkgjs/parseargs@0.11.0":
@@ -11125,7 +11125,7 @@ snapshots:
       "@nodelib/fs.scandir": 2.1.5
       fastq: 1.17.1
 
-  "@othent/kms@1.0.12":
+  "@othent/kms@2.0.0-beta.3":
     dependencies:
       "@auth0/auth0-spa-js": 2.1.3
       arweave: 1.15.1
