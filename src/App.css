@@ -269,11 +269,28 @@ ul {
   align-items: center;
 }
 
+.input__input[readonly],
+a.input__input {
+  box-shadow: 0 0 0 2px #0b3;
+}
+
+.input__input[aria-invalid] {
+  box-shadow: 0 0 0 2px #f00;
+}
+
 textarea.input__input {
-  padding: .75rem .5rem .75rem;
+  padding: 0.75rem 0.5rem 0.75rem;
   min-height: 80px;
   resize: vertical;
   overflow-y: scroll;
+  word-break: break-all;
+}
+
+a.input__input {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .input__encoding,

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
 import { TextField } from "./components/TextField";
+import { LinkField } from "./components/LinkField";
 import { UserCard } from "./components/UserCard";
 
 import "./App.css";
@@ -218,7 +219,7 @@ function App() {
           [name]: {
             name,
             status:
-              returnValue.isValid ?? !!returnValue.result ? "ok" : "error",
+              (returnValue.isValid ?? !!returnValue.result) ? "ok" : "error",
             elapsed,
             timestamp: Date.now(),
             ...returnValue,
@@ -371,7 +372,7 @@ function App() {
       const result = await othent.dispatch(transaction);
       const transactionURL = `https://viewblock.io/arweave/tx/${result.id}`;
 
-      return { result, transactionURL };
+      return { result, isValid: !!result, transactionURL };
     },
     { name: "dispatch" },
   );
@@ -385,7 +386,7 @@ function App() {
       const plaintext = normalizeInput(dataStr);
       const result = await othent.encrypt(plaintext);
 
-      return { result, input: plaintext };
+      return { result, isValid: !!result, input: plaintext };
     },
     { name: "encrypt" },
   );
@@ -430,7 +431,7 @@ function App() {
       // TODO: Do we need to "re-implement" most of `verifyMessage()` in userland to verify?
       // const isValid = await othent.verifyMessage(dataToSign, result);
 
-      return { result, input: data };
+      return { result, isValid: !!result, input: data };
     },
     { name: "signature" },
   );
@@ -461,7 +462,7 @@ function App() {
       const data = normalizeInput(dataStr);
       const result = await othent.signMessage(data);
 
-      return { result, input: data };
+      return { result, isValid: !!result, input: data };
     },
     { name: "signMessage" },
   );
@@ -492,7 +493,7 @@ function App() {
       const data = normalizeInput(dataStr);
       const result = await othent.privateHash(data);
 
-      return { result, input: data };
+      return { result, isValid: !!result, input: data };
     },
     { name: "privateHash" },
   );
@@ -669,7 +670,7 @@ function App() {
             label="Content-Type"
             defaultValue={DEFAULT_TX_DATA_TYPE}
             inputRef={assignRef}
-            options={ ["text/plain", "text/html"] }
+            options={["text/plain", "text/html"]}
           />
           <TextField
             name="signData"
@@ -677,6 +678,21 @@ function App() {
             defaultValue={DEFAULT_TX_DATA}
             inputRef={assignRef}
           />
+          {results["sign"]?.result ? (
+            <>
+              <TextField
+                label="sign() result"
+                value={results["sign"].result}
+                encoding="Hidden"
+              />
+              <TextField
+                label="tx.post() result"
+                value={JSON.stringify(results["sign"].postResult, null, "  ")}
+                encoding="JSON"
+                hasError={!results["sign"].postResult}
+              />
+            </>
+          ) : null}
         </TestButton>
 
         <TestButton
@@ -689,7 +705,7 @@ function App() {
             label="Content-Type"
             defaultValue={DEFAULT_TX_DATA_TYPE}
             inputRef={assignRef}
-            options={ ["text/plain", "text/html"] }
+            options={["text/plain", "text/html"]}
           />
           <TextField
             name="dispatchData"
@@ -697,6 +713,21 @@ function App() {
             defaultValue={DEFAULT_TX_DATA}
             inputRef={assignRef}
           />
+          {results["dispatch"]?.result ? (
+            <>
+              <TextField
+                label="dispatch() result"
+                value={JSON.stringify(results["dispatch"].result, null, "  ")}
+                hasError={!results["dispatch"].isValid}
+                encoding="JSON"
+              />
+              <LinkField
+                label="dispatch() result"
+                value={results["dispatch"].transactionURL}
+                hasError={!results["dispatch"].transactionURL}
+              />
+            </>
+          ) : null}
         </TestButton>
       </div>
 
@@ -712,6 +743,16 @@ function App() {
             defaultValue={DEFAULT_SECRET}
             inputRef={assignRef}
           />
+          {results["encrypt"]?.result ? (
+            <>
+              <TextField
+                label="encrypt() result"
+                value={replacer(null, results["encrypt"].result)}
+                hasError={!results["encrypt"].isValid}
+                encoding="Base64"
+              />
+            </>
+          ) : null}
         </TestButton>
 
         <TestButton
@@ -726,6 +767,15 @@ function App() {
             inputRef={assignRef}
             encoding="Base64"
           />
+          {results["decrypt"]?.result ? (
+            <>
+              <TextField
+                label="decrypt() result"
+                value={results["decrypt"].result}
+                hasError={!results["decrypt"].isValid}
+              />
+            </>
+          ) : null}
         </TestButton>
       </div>
 
@@ -741,6 +791,16 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_SIGNING}
             inputRef={assignRef}
           />
+          {results["signature"]?.result ? (
+            <>
+              <TextField
+                label="signature() result"
+                value={replacer(null, results["signature"].result)}
+                hasError={!results["signature"].isValid}
+                encoding="Base64"
+              />
+            </>
+          ) : null}
         </TestButton>
 
         <TestButton
@@ -754,6 +814,16 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_SIGNING}
             inputRef={assignRef}
           />
+          {results["signDataItem"]?.result ? (
+            <>
+              <TextField
+                label="signDataItem() result"
+                value={replacer(null, results["signDataItem"].result)}
+                hasError={!results["signDataItem"].isValid}
+                encoding="Base64"
+              />
+            </>
+          ) : null}
         </TestButton>
 
         <TestButton
@@ -767,6 +837,16 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_SIGNING}
             inputRef={assignRef}
           />
+          {results["signMessage"]?.result ? (
+            <>
+              <TextField
+                label="signMessage() result"
+                value={replacer(null, results["signMessage"].result)}
+                hasError={!results["signMessage"].isValid}
+                encoding="Base64"
+              />
+            </>
+          ) : null}
         </TestButton>
 
         <TestButton
@@ -787,6 +867,14 @@ function App() {
             inputRef={assignRef}
             encoding="Base64"
           />
+          {results["verifyMessage"]?.result ? (
+            <>
+              <TextField
+                label="verifyMessage() result"
+                value={`${results["verifyMessage"].result}`}
+              />
+            </>
+          ) : null}
         </TestButton>
 
         <TestButton
@@ -800,6 +888,16 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_HASHING}
             inputRef={assignRef}
           />
+          {results["privateHash"]?.result ? (
+            <>
+              <TextField
+                label="privateHash() result"
+                value={results["privateHash"].result}
+                hasError={!results["privateHash"].isValid}
+                encoding="Base64"
+              />
+            </>
+          ) : null}
         </TestButton>
       </div>
 
