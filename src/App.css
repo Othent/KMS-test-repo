@@ -7,7 +7,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font-family: monospace;
   font-size: inherit;
   font-weight: inherit;
@@ -157,10 +158,24 @@ ul {
   gap: 1rem;
 }
 
+.testButton__base {
+  position: relative;
+}
+
+.testButton__base:hover::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8px;
+  background: rgba(0, 0, 0, 0.0625);
+  border-radius: 4px;
+}
+
 .testButton__base.testButton--isExpanded {
   /* grid-column: 1 / -1; */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(40px, 40px));
   gap: 1rem;
 }
 
@@ -181,6 +196,7 @@ ul {
 
 .testButton__button {
   border: 2px solid black;
+  background: white;
   border-radius: 4px;
   height: 40px;
   width: 100%;
@@ -210,11 +226,16 @@ ul {
 .testButton__elapsed,
 .testButton__expandButton {
   position: absolute;
-  right: -6px;
+  left: -6px;
   background: white;
   padding: 0 4px;
   border-radius: 4px;
   border: 2px solid black;
+  height: 20px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .testButton__elapsed {
@@ -233,16 +254,59 @@ ul {
 
 /* Inputs */
 
-input[type="text"],
-select {
+.input__base {
+  position: relative;
+}
+
+.input__input {
   border: 2px solid black;
+  background: white;
   border-radius: 4px;
   height: 40px;
   width: 100%;
   padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
 }
 
+textarea.input__input {
+  padding: .75rem .5rem .75rem;
+  min-height: 80px;
+  resize: vertical;
+  overflow-y: scroll;
+}
 
+.input__encoding,
+.input__expandButton {
+  position: absolute;
+  background: white;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 2px solid black;
+  font-weight: bold;
+  height: 20px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input__encoding {
+  left: 12px;
+  bottom: -6px;
+  font-size: 0.75rem;
+}
+
+.input__expandButton {
+  left: -6px;
+  bottom: -6px;
+  cursor: pointer;
+}
+
+.input__expandButton:hover {
+  background: black;
+  color: white;
+}
 
 /* Results */
 

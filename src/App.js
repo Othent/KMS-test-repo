@@ -3,9 +3,11 @@ import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
 import { TestButton } from "./components/TestButton";
+import { TextField } from "./components/TextField";
 import { UserCard } from "./components/UserCard";
 
 import "./App.css";
+import { SelectField } from "./components/SelectField";
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -92,10 +94,8 @@ function App() {
   });
 
   const normalizeInput = (dataStr) => {
-    return useStrings
-      ? dataStr
-      : new TextEncoder().encode(dataStr);
-  }
+    return useStrings ? dataStr : new TextEncoder().encode(dataStr);
+  };
 
   const othent = useMemo(() => {
     return new Othent({
@@ -333,9 +333,12 @@ function App() {
         data: inputsRef.current.signData?.value || DEFAULT_TX_DATA,
       });
 
-      transaction.addTag("Content-Type", inputsRef.current.signType?.value || DEFAULT_TX_DATA_TYPE);
+      transaction.addTag(
+        "Content-Type",
+        inputsRef.current.signType?.value || DEFAULT_TX_DATA_TYPE,
+      );
 
-      const result = await othent.sign(transaction);
+      /* const result = */ await othent.sign(transaction);
 
       let postResult = null;
 
@@ -360,7 +363,10 @@ function App() {
         data: inputsRef.current.dispatchData?.value || DEFAULT_TX_DATA,
       });
 
-      transaction.addTag("Content-Type", inputsRef.current.dispatchType?.value || DEFAULT_TX_DATA_TYPE);
+      transaction.addTag(
+        "Content-Type",
+        inputsRef.current.dispatchType?.value || DEFAULT_TX_DATA_TYPE,
+      );
 
       const result = await othent.dispatch(transaction);
       const transactionURL = `https://viewblock.io/arweave/tx/${result.id}`;
@@ -374,7 +380,8 @@ function App() {
 
   const handleEncrypt = getHandler(
     async () => {
-      const dataStr = inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
+      const dataStr =
+        inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
       const plaintext = normalizeInput(dataStr);
       const result = await othent.encrypt(plaintext);
 
@@ -385,11 +392,14 @@ function App() {
 
   const handleDecrypt = getHandler(
     async () => {
-      const dataStr = inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
+      const dataStr =
+        inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
       const plaintext = normalizeInput(dataStr);
 
       const b64Ciphertext = inputsRef.current.decryptCiphertext?.value || "";
-      const encryptedData = b64Ciphertext ? b64ToUint8Array(b64Ciphertext) : await othent.encrypt(plaintext);
+      const encryptedData = b64Ciphertext
+        ? b64ToUint8Array(b64Ciphertext)
+        : await othent.encrypt(plaintext);
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
       // (not a regular one) `string` directly:
@@ -411,7 +421,8 @@ function App() {
 
   const handleSignature = getHandler(
     async () => {
-      const dataStr = inputsRef.current.signatureData?.value || DEFAULT_DATA_FOR_SIGNING;
+      const dataStr =
+        inputsRef.current.signatureData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
       const result = await othent.signature(data);
 
@@ -426,7 +437,8 @@ function App() {
 
   const handleSignDataItem = getHandler(
     async () => {
-      const dataStr = inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING;
+      const dataStr =
+        inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING;
       const result = await othent.signDataItem({ data: dataStr });
       const dataItem = new DataItem(Buffer.from(result));
 
@@ -444,7 +456,8 @@ function App() {
 
   const handleSignMessage = getHandler(
     async () => {
-      const dataStr = inputsRef.current.signMessageData?.value || DEFAULT_DATA_FOR_SIGNING;
+      const dataStr =
+        inputsRef.current.signMessageData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
       const result = await othent.signMessage(data);
 
@@ -455,11 +468,15 @@ function App() {
 
   const handleVerifyMessage = getHandler(
     async () => {
-      const dataStr = inputsRef.current.verifyMessageData?.value || DEFAULT_DATA_FOR_SIGNING;
+      const dataStr =
+        inputsRef.current.verifyMessageData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
 
-      const b64Signature = inputsRef.current.verifyMessageSignature?.value || "";
-      const signedData = b64Signature ? b64ToUint8Array(b64Signature) : await othent.signMessage(data);
+      const b64Signature =
+        inputsRef.current.verifyMessageSignature?.value || "";
+      const signedData = b64Signature
+        ? b64ToUint8Array(b64Signature)
+        : await othent.signMessage(data);
 
       const result = await othent.verifyMessage(data, signedData);
 
@@ -470,7 +487,8 @@ function App() {
 
   const handlePrivateHash = getHandler(
     async () => {
-      const dataStr = inputsRef.current.privateHashData?.value || DEFAULT_DATA_FOR_HASHING;
+      const dataStr =
+        inputsRef.current.privateHashData?.value || DEFAULT_DATA_FOR_HASHING;
       const data = normalizeInput(dataStr);
       const result = await othent.privateHash(data);
 
@@ -645,46 +663,40 @@ function App() {
       </div>
 
       <div className="block testButtons__grid">
-        <TestButton
-          name="sign()"
-          onClick={handleSign}
-          {...results["sign"]}>
-          <select
+        <TestButton name="sign()" onClick={handleSign} {...results["sign"]}>
+          <SelectField
             name="signType"
-            type="text"
-            placeholder="Content-Type"
-            defaultValue={ DEFAULT_TX_DATA_TYPE }
-            ref={ assignRef }>
-            <option>text/plain</option>
-            <option>text/html</option>
-          </select>
-          <input
+            label="Content-Type"
+            defaultValue={DEFAULT_TX_DATA_TYPE}
+            inputRef={assignRef}
+            options={ ["text/plain", "text/html"] }
+          />
+          <TextField
             name="signData"
-            type="text"
-            placeholder="Transaction.data"
-            defaultValue={ DEFAULT_TX_DATA }
-            ref={ assignRef } />
+            label="Transaction.data"
+            defaultValue={DEFAULT_TX_DATA}
+            inputRef={assignRef}
+          />
         </TestButton>
 
         <TestButton
           name="dispatch()"
           onClick={handleDispatch}
-          {...results["dispatch"]}>
-          <select
+          {...results["dispatch"]}
+        >
+          <SelectField
             name="dispatchType"
-            type="text"
-            placeholder="Content-Type"
-            defaultValue={ DEFAULT_TX_DATA_TYPE }
-            ref={ assignRef }>
-            <option>text/plain</option>
-            <option>text/html</option>
-          </select>
-          <input
+            label="Content-Type"
+            defaultValue={DEFAULT_TX_DATA_TYPE}
+            inputRef={assignRef}
+            options={ ["text/plain", "text/html"] }
+          />
+          <TextField
             name="dispatchData"
-            type="text"
-            placeholder="Transaction.data"
-            defaultValue={ DEFAULT_TX_DATA }
-            ref={ assignRef } />
+            label="Transaction.data"
+            defaultValue={DEFAULT_TX_DATA}
+            inputRef={assignRef}
+          />
         </TestButton>
       </div>
 
@@ -692,25 +704,28 @@ function App() {
         <TestButton
           name="encrypt()"
           onClick={handleEncrypt}
-          {...results["encrypt"]}>
-          <input
+          {...results["encrypt"]}
+        >
+          <TextField
             name="encryptPlaintext"
-            type="text"
-            placeholder="plaintext"
-            defaultValue={ DEFAULT_SECRET }
-            ref={ assignRef } />
+            label="plaintext"
+            defaultValue={DEFAULT_SECRET}
+            inputRef={assignRef}
+          />
         </TestButton>
 
         <TestButton
           name="decrypt()"
           onClick={handleDecrypt}
-          {...results["decrypt"]}>
-          <input
+          {...results["decrypt"]}
+        >
+          <TextField
             name="decryptCiphertext"
-            type="text"
-            placeholder="ciphertext"
+            label="ciphertext"
             defaultValue=""
-            ref={ assignRef } />
+            inputRef={assignRef}
+            encoding="Base64"
+          />
         </TestButton>
       </div>
 
@@ -718,67 +733,73 @@ function App() {
         <TestButton
           name="signature()"
           onClick={handleSignature}
-          {...results["signature"]}>
-          <input
+          {...results["signature"]}
+        >
+          <TextField
             name="signatureData"
-            type="text"
-            placeholder="data"
-            defaultValue={ DEFAULT_DATA_FOR_SIGNING }
-            ref={ assignRef } />
+            label="data"
+            defaultValue={DEFAULT_DATA_FOR_SIGNING}
+            inputRef={assignRef}
+          />
         </TestButton>
 
         <TestButton
           name="signDataItem()"
           onClick={handleSignDataItem}
-          {...results["signDataItem"]}>
-          <input
+          {...results["signDataItem"]}
+        >
+          <TextField
             name="signDataItemData"
-            type="text"
-            placeholder="DataItem.data"
-            defaultValue={ DEFAULT_DATA_FOR_SIGNING }
-            ref={ assignRef } />
+            label="DataItem.data"
+            defaultValue={DEFAULT_DATA_FOR_SIGNING}
+            inputRef={assignRef}
+          />
         </TestButton>
 
         <TestButton
           name="signMessage()"
           onClick={handleSignMessage}
-          {...results["signMessage"]}>
-          <input
+          {...results["signMessage"]}
+        >
+          <TextField
             name="signMessageData"
-            type="text"
-            placeholder="message"
-            defaultValue={ DEFAULT_DATA_FOR_SIGNING }
-            ref={ assignRef } />
+            label="message"
+            defaultValue={DEFAULT_DATA_FOR_SIGNING}
+            inputRef={assignRef}
+          />
         </TestButton>
 
         <TestButton
           name="verifyMessage()"
           onClick={handleVerifyMessage}
-          {...results["verifyMessage"]}>
-          <input
+          {...results["verifyMessage"]}
+        >
+          <TextField
             name="verifyMessageData"
-            type="text"
-            placeholder="message"
-            defaultValue={ DEFAULT_DATA_FOR_SIGNING }
-            ref={ assignRef } />
-          <input
+            label="message"
+            defaultValue={DEFAULT_DATA_FOR_SIGNING}
+            inputRef={assignRef}
+          />
+          <TextField
             name="verifyMessageSignature"
-            type="text"
-            placeholder="signature"
+            label="signature"
             defaultValue=""
-            ref={ assignRef } />
+            inputRef={assignRef}
+            encoding="Base64"
+          />
         </TestButton>
 
         <TestButton
           name="privateHash()"
           onClick={handlePrivateHash}
-          {...results["privateHash"]}>
-          <input
+          {...results["privateHash"]}
+        >
+          <TextField
             name="privateHashData"
-            type="text"
-            placeholder="data"
-            defaultValue={ DEFAULT_DATA_FOR_HASHING }
-            ref={ assignRef } />
+            label="data"
+            defaultValue={DEFAULT_DATA_FOR_HASHING}
+            inputRef={assignRef}
+          />
         </TestButton>
       </div>
 
