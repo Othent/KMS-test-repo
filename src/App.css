@@ -274,7 +274,8 @@ a.input__input {
   box-shadow: 0 0 0 2px #0b3;
 }
 
-.input__input[aria-invalid] a:empty {
+.input__input[aria-invalid],
+a:empty {
   box-shadow: 0 0 0 2px #f00;
 }
 

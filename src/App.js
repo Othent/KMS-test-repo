@@ -678,7 +678,7 @@ function App() {
             defaultValue={DEFAULT_TX_DATA}
             inputRef={assignRef}
           />
-          {results["sign"]?.result ? (
+          {results["sign"]?.result === undefined ? null : (
             <>
               <TextField
                 label="sign() result"
@@ -692,7 +692,7 @@ function App() {
                 hasError={!results["sign"].postResult}
               />
             </>
-          ) : null}
+          )}
         </TestButton>
 
         <TestButton
@@ -713,7 +713,7 @@ function App() {
             defaultValue={DEFAULT_TX_DATA}
             inputRef={assignRef}
           />
-          {results["dispatch"]?.result ? (
+          {results["dispatch"]?.result === undefined ? null : (
             <>
               <TextField
                 label="dispatch() result"
@@ -727,7 +727,7 @@ function App() {
                 hasError={!results["dispatch"].transactionURL}
               />
             </>
-          ) : null}
+          )}
         </TestButton>
       </div>
 
@@ -743,7 +743,7 @@ function App() {
             defaultValue={DEFAULT_SECRET}
             inputRef={assignRef}
           />
-          {results["encrypt"]?.result ? (
+          {results["encrypt"]?.result === undefined ? null : (
             <>
               <TextField
                 label="encrypt() result"
@@ -752,7 +752,7 @@ function App() {
                 encoding="Base64"
               />
             </>
-          ) : null}
+          )}
         </TestButton>
 
         <TestButton
@@ -767,7 +767,7 @@ function App() {
             inputRef={assignRef}
             encoding="Base64"
           />
-          {results["decrypt"]?.result ? (
+          {results["decrypt"]?.result === undefined ? null : (
             <>
               <TextField
                 label="decrypt() result"
@@ -775,7 +775,7 @@ function App() {
                 hasError={!results["decrypt"].isValid}
               />
             </>
-          ) : null}
+          )}
         </TestButton>
       </div>
 
@@ -791,7 +791,7 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_SIGNING}
             inputRef={assignRef}
           />
-          {results["signature"]?.result ? (
+          {results["signature"]?.result === undefined ? null : (
             <>
               <TextField
                 label="signature() result"
@@ -800,7 +800,7 @@ function App() {
                 encoding="Base64"
               />
             </>
-          ) : null}
+          )}
         </TestButton>
 
         <TestButton
@@ -814,7 +814,7 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_SIGNING}
             inputRef={assignRef}
           />
-          {results["signDataItem"]?.result ? (
+          {results["signDataItem"]?.result === undefined ? null : (
             <>
               <TextField
                 label="signDataItem() result"
@@ -823,7 +823,7 @@ function App() {
                 encoding="Base64"
               />
             </>
-          ) : null}
+          )}
         </TestButton>
 
         <TestButton
@@ -837,7 +837,7 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_SIGNING}
             inputRef={assignRef}
           />
-          {results["signMessage"]?.result ? (
+          {results["signMessage"]?.result === undefined ? null : (
             <>
               <TextField
                 label="signMessage() result"
@@ -846,7 +846,7 @@ function App() {
                 encoding="Base64"
               />
             </>
-          ) : null}
+          )}
         </TestButton>
 
         <TestButton
@@ -867,14 +867,15 @@ function App() {
             inputRef={assignRef}
             encoding="Base64"
           />
-          {results["verifyMessage"]?.result ? (
+          {results["verifyMessage"]?.result === undefined ? null : (
             <>
               <TextField
                 label="verifyMessage() result"
                 value={`${results["verifyMessage"].result}`}
+                hasError={!results["verifyMessage"].isValid}
               />
             </>
-          ) : null}
+          )}
         </TestButton>
 
         <TestButton
@@ -888,7 +889,7 @@ function App() {
             defaultValue={DEFAULT_DATA_FOR_HASHING}
             inputRef={assignRef}
           />
-          {results["privateHash"]?.result ? (
+          {results["privateHash"]?.result === undefined ? null : (
             <>
               <TextField
                 label="privateHash() result"
@@ -897,7 +898,7 @@ function App() {
                 encoding="Base64"
               />
             </>
-          ) : null}
+          )}
         </TestButton>
       </div>
 
