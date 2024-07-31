@@ -99,7 +99,7 @@ function App() {
   };
 
   const othent = useMemo(() => {
-    return new Othent({
+    const nextOthent = new Othent({
       ...(env === "dev" ? DEV_OTHENT_CONFIG : {}),
       auth0Strategy,
       autoConnect,
@@ -109,6 +109,16 @@ function App() {
       persistCookie,
       persistLocalStorage,
     });
+
+    console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
+
+    Object.entries(nextOthent.config).map(([key, value]) => {
+      console.log(` ${key.padStart(13)} = ${value}`);
+    });
+
+    console.groupEnd();
+
+    return nextOthent;
   }, [
     env,
     auth0Strategy,
@@ -936,7 +946,7 @@ function App() {
 
       <div className="block">
         {sortedResults.map((result) => (
-          <pre className="results__code">
+          <pre className="results__code" key={result.name || ""}>
             {JSON.stringify(result, replacer, "  ")}
           </pre>
         ))}
