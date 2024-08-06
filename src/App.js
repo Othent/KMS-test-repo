@@ -6,9 +6,9 @@ import { TestButton } from "./components/TestButton";
 import { TextField } from "./components/TextField";
 import { LinkField } from "./components/LinkField";
 import { UserCard } from "./components/UserCard";
+import { SelectField } from "./components/SelectField";
 
 import "./App.css";
-import { SelectField } from "./components/SelectField";
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -87,7 +87,7 @@ function App() {
     useStrings: false,
     postTransactions: false,
     env: "production",
-    auth0Strategy: "refresh-localstorage",
+    auth0Strategy: "refresh-memory",
     autoConnect: "lazy",
     throwErrors: true,
     persistCookie: false,
@@ -617,64 +617,64 @@ function App() {
 
       <div className="block testButtons__grid">
         <TestButton
+          {...results["connect"]}
           name="connect()"
           onClick={handleConnect}
-          {...results["connect"]}
         />
 
         <TestButton
+          {...results["disconnect"]}
           name="disconnect()"
           onClick={handleDisconnect}
-          {...results["disconnect"]}
         />
 
         <TestButton
+          {...results["requireAuth"]}
           name="requireAuth()"
           onClick={handleRequireAuth}
-          {...results["requireAuth"]}
         />
 
         <TestButton
+          {...results["isAuthenticated"]}
           name="isAuthenticated"
           onClick={handleIsAuthenticated}
-          {...results["isAuthenticated"]}
         />
       </div>
 
       <div className="block testButtons__grid">
         <TestButton
+          {...results["getActiveAddress"]}
           name="getActiveAddress()"
           onClick={handleGetActiveAddress}
-          {...results["getActiveAddress"]}
         />
 
         <TestButton
+          {...results["getActivePublicKey"]}
           name="getActivePublicKey()"
           onClick={handleGetActivePublicKey}
-          {...results["getActivePublicKey"]}
         />
 
         <TestButton
+          {...results["getAllAddresses"]}
           name="getAllAddresses()"
           onClick={handleGetAllAddresses}
-          {...results["getAllAddresses"]}
         />
 
         <TestButton
+          {...results["getWalletNames"]}
           name="getWalletNames()"
           onClick={handleGetWalletNames}
-          {...results["getWalletNames"]}
         />
 
         <TestButton
+          {...results["getUserDetails"]}
           name="getUserDetails()"
           onClick={handleGetUserDetails}
-          {...results["getUserDetails"]}
         />
       </div>
 
       <div className="block testButtons__grid">
-        <TestButton name="sign()" onClick={handleSign} {...results["sign"]}>
+        <TestButton {...results["sign"]} name="sign()" onClick={handleSign}>
           <SelectField
             name="signType"
             label="Content-Type"
@@ -706,9 +706,9 @@ function App() {
         </TestButton>
 
         <TestButton
+          {...results["dispatch"]}
           name="dispatch()"
           onClick={handleDispatch}
-          {...results["dispatch"]}
         >
           <SelectField
             name="dispatchType"
@@ -743,9 +743,9 @@ function App() {
 
       <div className="block testButtons__grid">
         <TestButton
+          {...results["encrypt"]}
           name="encrypt()"
           onClick={handleEncrypt}
-          {...results["encrypt"]}
         >
           <TextField
             name="encryptPlaintext"
@@ -766,9 +766,9 @@ function App() {
         </TestButton>
 
         <TestButton
+          {...results["decrypt"]}
           name="decrypt()"
           onClick={handleDecrypt}
-          {...results["decrypt"]}
         >
           <TextField
             name="decryptCiphertext"
@@ -791,9 +791,9 @@ function App() {
 
       <div className="block testButtons__grid">
         <TestButton
+          {...results["signature"]}
           name="signature()"
           onClick={handleSignature}
-          {...results["signature"]}
         >
           <TextField
             name="signatureData"
@@ -814,9 +814,9 @@ function App() {
         </TestButton>
 
         <TestButton
+          {...results["signDataItem"]}
           name="signDataItem()"
           onClick={handleSignDataItem}
-          {...results["signDataItem"]}
         >
           <TextField
             name="signDataItemData"
@@ -837,9 +837,9 @@ function App() {
         </TestButton>
 
         <TestButton
+          {...results["signMessage"]}
           name="signMessage()"
           onClick={handleSignMessage}
-          {...results["signMessage"]}
         >
           <TextField
             name="signMessageData"
@@ -860,9 +860,9 @@ function App() {
         </TestButton>
 
         <TestButton
+          {...results["verifyMessage"]}
           name="verifyMessage()"
           onClick={handleVerifyMessage}
-          {...results["verifyMessage"]}
         >
           <TextField
             name="verifyMessageData"
@@ -889,9 +889,9 @@ function App() {
         </TestButton>
 
         <TestButton
+          {...results["privateHash"]}
           name="privateHash()"
           onClick={handlePrivateHash}
-          {...results["privateHash"]}
         >
           <TextField
             name="privateHashData"
@@ -914,33 +914,33 @@ function App() {
 
       <div className="block testButtons__grid">
         <TestButton
+          {...results["walletName"]}
           name="walletName"
           onClick={handleWalletName}
-          {...results["walletName"]}
         />
 
         <TestButton
+          {...results["walletVersion"]}
           name="walletVersion"
           onClick={handleWalletVersion}
-          {...results["walletVersion"]}
         />
 
         <TestButton
+          {...results["config"]}
           name="config"
           onClick={handleConfig}
-          {...results["config"]}
         />
 
         <TestButton
+          {...results["getArweaveConfig"]}
           name="getArweaveConfig()"
           onClick={handleGetArweaveConfig}
-          {...results["getArweaveConfig"]}
         />
 
         <TestButton
+          {...results["getPermissions"]}
           name="getPermissions()"
           onClick={handleGetPermissions}
-          {...results["getPermissions"]}
         />
       </div>
 
