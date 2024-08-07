@@ -112,7 +112,7 @@ function App() {
 
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
 
-    Object.entries(nextOthent.config).map(([key, value]) => {
+    Object.entries(nextOthent.config).forEach(([key, value]) => {
       console.log(` ${key.padStart(13)} = ${value}`);
     });
 
@@ -349,15 +349,17 @@ function App() {
         inputsRef.current.signType?.value || DEFAULT_TX_DATA_TYPE,
       );
 
-      /* const result = */ await othent.sign(transaction);
+      const signedTransaction = await othent.sign(transaction);
 
       let postResult = null;
 
       if (postTransactions) {
-        postResult = await arweave.transactions.post(transaction);
+        postResult = await arweave.transactions.post(signedTransaction);
       }
 
-      const isValid = await arweave.transactions.verify(transaction);
+      const isValid =
+        (await arweave.transactions.verify(signedTransaction)) &&
+        transaction !== signedTransaction;
 
       return {
         result: "<SignedTransaction>",
