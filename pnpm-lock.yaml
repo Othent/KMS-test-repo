@@ -8,8 +8,8 @@ importers:
   .:
     dependencies:
       "@othent/kms":
-        specifier: ^2.0.0-beta.3
-        version: 2.0.0-beta.3
+        specifier: ^2.0.0-beta.10
+        version: 2.0.0-beta.10
       "@testing-library/jest-dom":
         specifier: ^5.17.0
         version: 5.17.0
@@ -1635,10 +1635,10 @@ packages:
       }
     engines: { node: ">= 8" }
 
-  "@othent/kms@2.0.0-beta.3":
+  "@othent/kms@2.0.0-beta.10":
     resolution:
       {
-        integrity: sha512-Dsq9/Eblc/6MVhvQEZPzUZo/L53zKupepbSrEJdWTPuQIV6viBOqeNFZ6SJHibXulUrKYxXhTOLSxPB6ICZD8A==,
+        integrity: sha512-nni9M8E4rcnm+ztj6S3/f5DYLLxQaoOhrQFF8ZU0FOloY1S3ttspVJwenYry0fgURHKQDhsvwHuo/Wkkn5nvFA==,
       }
 
   "@pkgjs/parseargs@0.11.0":
@@ -4513,6 +4513,12 @@ packages:
         integrity: sha512-5T6nhjsT+EOMzuck8JjBHARTHfMht0POzlA60WV2pMD3gyXw2LZnZ+ueGdNxG+0calOJcWKbpFcuzLZ91YWq9Q==,
       }
     engines: { node: ">= 0.10.0" }
+
+  extend@3.0.2:
+    resolution:
+      {
+        integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==,
+      }
 
   fast-deep-equal@3.1.3:
     resolution:
@@ -11125,13 +11131,14 @@ snapshots:
       "@nodelib/fs.scandir": 2.1.5
       fastq: 1.17.1
 
-  "@othent/kms@2.0.0-beta.3":
+  "@othent/kms@2.0.0-beta.10":
     dependencies:
       "@auth0/auth0-spa-js": 2.1.3
       arweave: 1.15.1
       axios: 1.7.2
       base64-js: 1.5.1
       buffer: 6.0.3
+      extend: 3.0.2
       jwk-to-pem: 2.0.5
       jwt-decode: 4.0.0
       pem-jwk: 2.0.0
@@ -13174,6 +13181,8 @@ snapshots:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
+
+  extend@3.0.2: {}
 
   fast-deep-equal@3.1.3: {}
 
