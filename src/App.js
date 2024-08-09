@@ -56,8 +56,9 @@ function App() {
     if (inputElement) inputsRef.current[inputElement.name] = inputElement;
   }, []);
 
+  const [{ userDetails, isAuthenticated }, setAuthState] = useState({});
+
   const [showDetailsJSON, setShowDetailsJSON] = useState(false);
-  const [userDetails, setUserDetails] = useState(null);
   const [results, setResults] = useState({});
 
   const sortedResults = useMemo(() => {
@@ -76,6 +77,8 @@ function App() {
       postTransactions,
       env,
       auth0Strategy,
+      auth0Cache,
+      auth0LogInMethod,
       autoConnect,
       throwErrors,
       persistCookie,
@@ -87,7 +90,9 @@ function App() {
     useStrings: false,
     postTransactions: false,
     env: "production",
-    auth0Strategy: "refresh-memory",
+    auth0Strategy: "refresh-tokens",
+    auth0Cache: "memory",
+    auth0LogInMethod: "popup",
     autoConnect: "lazy",
     throwErrors: true,
     persistCookie: false,
@@ -101,7 +106,10 @@ function App() {
   const othent = useMemo(() => {
     const nextOthent = new Othent({
       ...(env === "dev" ? DEV_OTHENT_CONFIG : {}),
+      debug: true,
       auth0Strategy,
+      auth0Cache,
+      auth0LogInMethod,
       autoConnect,
       throwErrors,
       appName: "Othent KMS Test Repo",
@@ -122,6 +130,8 @@ function App() {
   }, [
     env,
     auth0Strategy,
+    auth0Cache,
+    auth0LogInMethod,
     autoConnect,
     throwErrors,
     persistCookie,
@@ -129,17 +139,19 @@ function App() {
   ]);
 
   // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
-  // project in DEV mode with hot reloading. It also makes sure only one of the two instances of `Othent` that will
-  // be created, due to React running in Development mode, is actually listening for `storage` events.
+  // project in DEV mode with hot reloading.
 
   const hasLoggedInRef = useRef(false);
 
   useEffect(() => {
-    const cleanupFn = othent.init();
+    const cleanupFn = othent.startTabSynching();
+
+    // This is not needed (NOOP) unless auth0LogInMethod = "redirect":
+    othent.completeConnectionAfterRedirect();
 
     if (!hasLoggedInRef.current) return;
 
-    setUserDetails(null);
+    setAuthState({});
 
     async function reconnectOnHotReload() {
       console.groupCollapsed(`Reconnecting due to hot reloading...`);
@@ -172,7 +184,7 @@ function App() {
     // This is only here due to hot reloading in development:
     hasLoggedInRef.current = hasLoggedInRef.current || isAuthenticated;
 
-    setUserDetails(userDetails);
+    setAuthState({ userDetails, isAuthenticated });
   }, []);
 
   const handleError = useCallback((error) => {
@@ -602,6 +614,7 @@ function App() {
         <p>Check the DevTools Console for additional information.</p>
         <UserCard
           userDetails={userDetails}
+          isAuthenticated={isAuthenticated}
           showDetailsJSON={showDetailsJSON}
           setShowDetailsJSON={setShowDetailsJSON}
         />

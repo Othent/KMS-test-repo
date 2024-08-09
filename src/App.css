@@ -96,6 +96,7 @@ ul {
 /* User Card */
 
 .userCard__base {
+  position: relative;
   margin-top: 1rem;
   display: flex;
   border: 2px solid black;
@@ -110,6 +111,19 @@ ul {
   height: 72px;
   background: rgba(0, 0, 0, 0.125);
   border-right: 2px solid black;
+}
+
+.userCard__authIndicator {
+  position: absolute;
+  bottom: 0;
+  left: 72px;
+  width: 12px;
+  height: 12px;
+  border-radius: 12px;
+  transform: translate(-50%, -4px);
+  border: 2px solid white;
+  box-shadow: inset 0 0 0 2px black;
+  box-sizing: content-box;
 }
 
 .userCard__list {
