@@ -1,4 +1,9 @@
-import { b64ToUint8Array, Othent, uint8ArrayTob64Url } from "@othent/kms";
+import {
+  b64ToUint8Array,
+  Othent,
+  uint8ArrayTob64Url,
+  binaryDataTypeToString,
+} from "@othent/kms";
 import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
@@ -46,8 +51,6 @@ const DEFAULT_TX_DATA_TYPE = "text/html";
 const DEFAULT_SECRET = "This is a very secret message... 🤫";
 const DEFAULT_DATA_FOR_SIGNING = "This data needs to be signed... ✅";
 const DEFAULT_DATA_FOR_HASHING = "This data needs to be hashed... 🗜️";
-
-window.uint8ArrayTob64Url = uint8ArrayTob64Url;
 
 function App() {
   const inputsRef = useRef({});
@@ -433,11 +436,12 @@ function App() {
       //   : encryptReturn;
 
       const result = await othent.decrypt(encryptedData);
+      const resultString = binaryDataTypeToString(result);
 
       // Assuming we haven't changed the input field in for `encrypt()` or took the encrypted value from somewhere else:
-      const isValid = result === dataStr;
+      const isValid = resultString === dataStr;
 
-      return { result, isValid, input: encryptedData };
+      return { result, isValid, input: encryptedData, resultString };
     },
     { name: "decrypt" },
   );
@@ -796,7 +800,13 @@ function App() {
             <>
               <TextField
                 label="decrypt() result"
-                value={results["decrypt"].result}
+                value={replacer(null, results["decrypt"].result)}
+                hasError={!results["decrypt"].isValid}
+                encoding="Base64"
+              />
+              <TextField
+                label="decrypt() decrypted result"
+                value={results["decrypt"].resultString}
                 hasError={!results["decrypt"].isValid}
               />
             </>
