@@ -559,6 +559,15 @@ function App() {
     { name: "config" },
   );
 
+  const handleAppInfo = getHandler(
+    async () => {
+      const result = await othent.appInfo;
+
+      return { result };
+    },
+    { name: "appInfo" },
+  );
+
   const handleGetArweaveConfig = getHandler(
     async () => {
       const result = await othent.getArweaveConfig();
@@ -958,6 +967,12 @@ function App() {
           {...results["config"]}
           name="config"
           onClick={handleConfig}
+        />
+
+        <TestButton
+          {...results["appInfo"]}
+          name="appInfo"
+          onClick={handleAppInfo}
         />
 
         <TestButton
