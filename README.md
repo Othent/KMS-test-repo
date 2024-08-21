@@ -27,10 +27,11 @@ Learn how to set it up at https://docs.othent.io or looking at our demo's code a
 
 To run it with a local `KeyManagementService` instance:
 
-1. Clone [`@othent/kms`](https://github.com/Othent/KeyManagementService).
+1. Clone [`@othent/kms`](https://github.com/Othent/KeyManagementService) in the same directory where you cloned this
+   project.
 
-2. Inside `@othent/kms`, run `pnpm dev`.
+2. Inside `@othent/kms` (`../KeyManagementService`), run `pnpm dev`.
 
-3. Inside this repo, run `bun link @othent/kms`. See [`bun link`](https://bun.sh/docs/cli/link).
+3. Inside this repo, run `pnpm link ../KeyManagementService/`. See [`pnpm link`](https://pnpm.io/cli/link).
 
 <br />
