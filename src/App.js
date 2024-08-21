@@ -40,10 +40,13 @@ function replacer(_, value) {
 }
 
 const DEV_OTHENT_CONFIG = {
-  auth0Domain: "gmzcodes-test.eu.auth0.com",
-  auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
-  auth0Strategy: "refresh-localstorage",
   serverBaseURL: "http://localhost:3010",
+};
+
+const appInfo = {
+  name: "Othent KMS Test Repo",
+  version: Othent.walletVersion,
+  env: "", // This will be automatically set to `"development"` when running in localhost or `"production"` otherwise.
 };
 
 const DEFAULT_TX_DATA = `<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>`;
@@ -115,10 +118,9 @@ function App() {
       auth0LogInMethod,
       autoConnect,
       throwErrors,
-      appName: "Othent KMS Test Repo",
-      appVersion: Othent.walletVersion,
       persistCookie,
       persistLocalStorage,
+      appInfo,
     });
 
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
@@ -149,8 +151,10 @@ function App() {
   useEffect(() => {
     const cleanupFn = othent.startTabSynching();
 
-    // This is not needed (NOOP) unless auth0LogInMethod = "redirect":
-    othent.completeConnectionAfterRedirect();
+    if (othent.config.auth0LogInMethod === "redirect") {
+      // This is not needed (NOOP) unless auth0LogInMethod = "redirect":
+      othent.completeConnectionAfterRedirect();
+    }
 
     if (!hasLoggedInRef.current) return;
 
