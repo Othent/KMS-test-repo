@@ -34,4 +34,6 @@ To run it with a local `KeyManagementService` instance:
 
 3. Inside this repo, run `pnpm link ../KeyManagementService/`. See [`pnpm link`](https://pnpm.io/cli/link).
 
+You can later revert this with `pnpm unlink ./KeyManagementService/` or `pnpm unlink @othent/kms`.
+
 <br />
