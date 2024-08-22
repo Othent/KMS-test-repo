@@ -627,7 +627,7 @@ function App() {
   return (
     <div className="app">
       <header className="header__base">
-        <h1 className="header__title">Othent KMS JS SDK Demo</h1>
+        <h1 className="header__title">Othent KMS JS SDK Playground</h1>
         <p>Check the DevTools Console for additional information.</p>
         <UserCard
           userDetails={userDetails}
