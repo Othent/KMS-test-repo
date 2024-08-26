@@ -405,3 +405,11 @@ a.input__input {
   white-space: normal;
   word-break: break-all;
 }
+
+/* Footer */
+
+.footer__base {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}

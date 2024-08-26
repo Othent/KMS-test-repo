@@ -973,13 +973,47 @@ function App() {
         />
       </div>
 
-      {sortedResults ? (
+      {sortedResults.length > 0 ? (
         <ol className="block logItems__grid">
           {sortedResults.map((result) => (
             <LogItem key={result.name} {...result} />
           ))}
         </ol>
       ) : null}
+
+      <footer className="block footer__base">
+        <a target="_blank" rel="noreferrer noopener" href="https://othent.io/">
+          othent.io
+        </a>
+        <a
+          target="_blank"
+          rel="noreferrer noopener"
+          href="https://docs.othent.io/"
+        >
+          docs.othent.io
+        </a>
+        <a
+          target="_blank"
+          rel="noreferrer noopener"
+          href="https://github.com/Othent/KeyManagementService"
+        >
+          @othent/kms repo
+        </a>
+        <a
+          target="_blank"
+          rel="noreferrer noopener"
+          href="https://www.npmjs.com/package/@othent/kms"
+        >
+          @othent/kms npm
+        </a>
+        <a
+          target="_blank"
+          rel="noreferrer noopener"
+          href="https://github.com/Othent/KMS-test-repo"
+        >
+          @othent/kms-playground repo
+        </a>
+      </footer>
     </div>
   );
 }
