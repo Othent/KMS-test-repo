@@ -1,9 +1,4 @@
-import {
-  b64ToUint8Array,
-  Othent,
-  uint8ArrayTob64Url,
-  binaryDataTypeToString,
-} from "@othent/kms";
+import { Othent, b64ToUint8Array, binaryDataTypeToString } from "@othent/kms";
 import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
@@ -12,6 +7,8 @@ import { TextField } from "./components/TextField";
 import { LinkField } from "./components/LinkField";
 import { UserCard } from "./components/UserCard";
 import { SelectField } from "./components/SelectField";
+import { LogItem } from "./components/LogItem";
+import { replacer } from "./utils/replacer";
 
 import "./App.css";
 
@@ -20,24 +17,6 @@ const arweave = Arweave.init({
   protocol: "https",
   port: 443,
 });
-
-function replacer(_, value) {
-  let uint8Array;
-
-  if (
-    value instanceof Buffer ||
-    value instanceof DataView ||
-    ArrayBuffer.isView(value)
-  ) {
-    uint8Array = new Uint8Array(value.buffer);
-  } else if (value instanceof ArrayBuffer) {
-    uint8Array = new Uint8Array(value);
-  } else {
-    return value;
-  }
-
-  return uint8ArrayTob64Url(uint8Array);
-}
 
 const appInfo = {
   name: "Othent KMS Test Repo",
@@ -73,15 +52,16 @@ function App() {
       (a, b) => b.timestamp - a.timestamp,
     );
 
-    return sortedResultsArray.length === 0 ? [{}] : sortedResultsArray;
+    return sortedResultsArray.length === 0 ? [] : sortedResultsArray;
   }, [results]);
 
   const [
     {
-      // OLD BACKEND + OLD SDK: Works with `string` inputs, doesn't work with `TextEncoder` inputs
-      // OLD BACKEND + NEW SDK: Works with `string` inputs, works with `TextEncoder` inputs.
+      // Playground:
       useStrings,
       postTransactions,
+
+      // Othent:
       serverBaseURL,
       auth0Strategy,
       auth0Cache,
@@ -94,8 +74,11 @@ function App() {
     // TODO: Add UI for settings:
     // setSettings,
   ] = useState({
+    // Playground:
     useStrings: false,
     postTransactions: false,
+
+    // Othent:
     serverBaseURL: undefined,
     // serverBaseURL: "http://localhost:3010", // Local server
     auth0Strategy: "refresh-tokens",
@@ -108,6 +91,9 @@ function App() {
   });
 
   const normalizeInput = (dataStr) => {
+    // OLD BACKEND + OLD SDK: Works with `string` inputs, doesn't work with `TextEncoder` inputs
+    // OLD BACKEND + NEW SDK: Works with `string` inputs, works with `TextEncoder` inputs.
+
     return useStrings ? dataStr : new TextEncoder().encode(dataStr);
   };
 
@@ -987,13 +973,13 @@ function App() {
         />
       </div>
 
-      <div className="block">
-        {sortedResults.map((result) => (
-          <pre className="results__code" key={result.name || ""}>
-            {JSON.stringify(result, replacer, "  ")}
-          </pre>
-        ))}
-      </div>
+      {sortedResults ? (
+        <ol className="block logItems__grid">
+          {sortedResults.map((result) => (
+            <LogItem key={result.name} {...result} />
+          ))}
+        </ol>
+      ) : null}
     </div>
   );
 }

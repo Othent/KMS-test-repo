@@ -340,16 +340,68 @@ a.input__input {
   color: white;
 }
 
-/* Results */
+/* LogItem */
 
-.results__code {
-  padding: 1rem;
+.logItems__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.logItem__base {
   border: 2px solid black;
   border-radius: 4px;
-  overflow-x: scroll;
+}
+
+.logItem__button.logItem--isLoading {
+  cursor: wait;
+}
+
+.logItem__header {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid black;
+  min-height: 42px;
+}
+
+.logItem__indicator {
+  font-size: 1.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.logItem__text {
+  font-weight: bold;
+  margin-right: auto;
+}
+
+.logItem__txLink,
+.logItem__copy,
+.logItem__elapsed {
+  padding: 0 8px;
+  border-left: 2px solid black;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+}
+
+.logItem__txLink,
+.logItem__copy {
+  cursor: pointer;
+}
+
+.logItem__result {
+  padding: 1rem;
+  overflow-x: auto;
   width: 100%;
 }
 
-.results__code + .results__code {
-  margin-top: 1rem;
+.logItem__result + .logItem__result {
+  border-top: 2px solid black;
+}
+
+.logItem__result.logItem--expand {
+  white-space: normal;
+  word-break: break-all;
 }
