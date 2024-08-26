@@ -24,7 +24,9 @@ export function LogItem({
     color = "#F00";
   }
 
-  const resultStr = JSON.stringify(result, replacer, "  ") || "...";
+  const resultStr =
+    JSON.stringify(result, replacer, "  ") ||
+    (status === "ok" ? "void" : "...");
   const resultStringStr = JSON.stringify(resultString, replacer, "  ");
 
   if (
