@@ -39,10 +39,6 @@ function replacer(_, value) {
   return uint8ArrayTob64Url(uint8Array);
 }
 
-const DEV_OTHENT_CONFIG = {
-  serverBaseURL: "http://localhost:3010",
-};
-
 const appInfo = {
   name: "Othent KMS Test Repo",
   version: Othent.walletVersion,
@@ -67,6 +63,11 @@ function App() {
   const [showDetailsJSON, setShowDetailsJSON] = useState(false);
   const [results, setResults] = useState({});
 
+  const handleSettings = () =>
+    alert(
+      `UI not implemented yet.\n\nYou can see the current settings in the Console.\n\nTo change them, clone the demo project and edit them in the code (App.js file).`,
+    );
+
   const sortedResults = useMemo(() => {
     const sortedResultsArray = Object.values(results).sort(
       (a, b) => b.timestamp - a.timestamp,
@@ -81,7 +82,7 @@ function App() {
       // OLD BACKEND + NEW SDK: Works with `string` inputs, works with `TextEncoder` inputs.
       useStrings,
       postTransactions,
-      env,
+      serverBaseURL,
       auth0Strategy,
       auth0Cache,
       auth0LogInMethod,
@@ -95,7 +96,8 @@ function App() {
   ] = useState({
     useStrings: false,
     postTransactions: false,
-    env: "production",
+    serverBaseURL: undefined,
+    // serverBaseURL: "http://localhost:3010", // Local server
     auth0Strategy: "refresh-tokens",
     auth0Cache: "memory",
     auth0LogInMethod: "popup",
@@ -111,8 +113,8 @@ function App() {
 
   const othent = useMemo(() => {
     const nextOthent = new Othent({
-      ...(env === "dev" ? DEV_OTHENT_CONFIG : {}),
       debug: true,
+      serverBaseURL,
       auth0Strategy,
       auth0Cache,
       auth0LogInMethod,
@@ -133,7 +135,7 @@ function App() {
 
     return nextOthent;
   }, [
-    env,
+    serverBaseURL,
     auth0Strategy,
     auth0Cache,
     auth0LogInMethod,
@@ -639,10 +641,7 @@ function App() {
         <button className="header__testAllButton" onClick={handleTestAll}>
           🧙‍♂️
         </button>
-        <button
-          className="header__settingsButton"
-          onClick={() => alert("Not implemented yet.")}
-        >
+        <button className="header__settingsButton" onClick={handleSettings}>
           ⚙️
         </button>
       </header>
