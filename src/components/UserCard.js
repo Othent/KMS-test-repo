@@ -30,11 +30,27 @@ export function UserCard({
           title={authenticationLabel}
         />
 
-        <ul className="userCard__list">
-          <li>{userDetails?.name || "-"}</li>
-          <li>{userDetails?.email || "-"}</li>
-          <li>{userDetails?.walletAddress || "-".repeat(43)}</li>
-        </ul>
+        {userDetails ? (
+          <ul className="userCard__list">
+            <li title="User name">{userDetails.name || "-"}</li>
+            <li title="User email">{userDetails.email || "-"}</li>
+            <li
+              title={`User wallet address${userDetails.walletAddressLabel ? ` - User wallet address name = ${userDetails.walletAddressLabel}` : ""}`}
+            >
+              {userDetails?.walletAddress || "-".repeat(43)}
+            </li>
+            <li title="User auth provider">
+              {userDetails.authProvider || "-"}
+            </li>
+          </ul>
+        ) : (
+          <ul className="userCard__list">
+            <li title="User name">-</li>
+            <li title="User email">-</li>
+            <li title="User wallet address">{"-".repeat(43)}</li>
+            <li title="User auth provider">-</li>
+          </ul>
+        )}
 
         <button
           className="userCard__expandButton"
