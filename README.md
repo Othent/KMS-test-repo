@@ -21,8 +21,8 @@ Learn how to set it up at https://docs.othent.io or looking at our demo's code a
 ## Running it locally:
 
 ```
-  pnpm install
-  pnpm start
+pnpm install
+pnpm start
 ```
 
 To run it with a local `KeyManagementService` instance:
