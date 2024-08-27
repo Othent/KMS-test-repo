@@ -1,24 +1,36 @@
 {
-  "name": "testing",
-  "version": "0.1.0",
+  "name": "@othent/kms-playground",
+  "version": "2.0.0",
+  "description": "An interactive playground / demo / example app using Othent KMS JS SDK",
   "private": true,
   "dependencies": {
-    "@othent/kms": "^1.0.11",
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "arweave": "^1.14.4",
-    "axios": "^1.6.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@othent/kms": "^2.0.0",
+    "arweave": "^1.15.1",
+    "axios": "^1.7.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "warp-arbundles": "^1.0.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "eslint": "^8.57.0",
+    "husky": "^9.1.5",
+    "lint-staged": "^15.2.9",
+    "prettier": "^3.3.3",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "bun run prettier && bun run start",
-    "prettier": "prettier --write ."
+    "dev": "pnpm start",
+    "clean": "rm -rf build",
+    "nuke": "pnpm clean && rm -rf node_modules pnpm-lock.yaml",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prettier": "prettier --write .",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
@@ -38,7 +50,13 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "prettier": "^3.2.4"
+  "engines": {
+    "pnpm": ">=8.0.0",
+    "node": ">=18.0.0 <22.0.0"
+  },
+  "lint-staged": {
+    "*": [
+      "prettier --write --ignore-unknown"
+    ]
   }
 }
