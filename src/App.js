@@ -82,8 +82,8 @@ function App() {
     serverBaseURL: undefined,
     // serverBaseURL: "http://localhost:3010", // Local server
     auth0Strategy: "refresh-tokens",
-    auth0Cache: "localstorage",
-    auth0LogInMethod: "redirect",
+    auth0Cache: "memory",
+    auth0LogInMethod: "popup",
     autoConnect: "lazy",
     throwErrors: true,
     persistCookie: false,
