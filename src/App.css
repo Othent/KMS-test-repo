@@ -106,9 +106,9 @@ ul {
 }
 
 .userCard__img {
-  flex: 0 0 72px;
-  width: 72px;
-  height: 72px;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
   background: rgba(0, 0, 0, 0.125);
   border-right: 2px solid black;
 }
@@ -116,7 +116,7 @@ ul {
 .userCard__authIndicator {
   position: absolute;
   bottom: 0;
-  left: 72px;
+  left: 88px;
   width: 12px;
   height: 12px;
   border-radius: 12px;
@@ -132,7 +132,7 @@ ul {
   flex-direction: column;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.5rem 1rem;
+  padding: 0 1rem;
   overflow: hidden;
 }
 
