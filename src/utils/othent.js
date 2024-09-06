@@ -1,7 +1,13 @@
 // v2:
-// export { Othent, b64ToUint8Array, binaryDataTypeToString } from "@othent/kms";
+export {
+  Othent,
+  b64ToUint8Array,
+  binaryDataTypeToString,
+  uint8ArrayTob64Url,
+} from "@othent/kms";
 
 // v1:
+/*
 import * as othent from "@othent/kms";
 
 export class Othent {
@@ -186,3 +192,4 @@ export class Othent {
 export const b64ToUint8Array = (str) => str;
 export const binaryDataTypeToString = (str) => str;
 export const uint8ArrayTob64Url = (str) => str;
+*/
