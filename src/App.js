@@ -1,4 +1,8 @@
-import { Othent, b64ToUint8Array, binaryDataTypeToString } from "@othent/kms";
+import {
+  Othent,
+  b64ToUint8Array,
+  binaryDataTypeToString,
+} from "./utils/othent";
 import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
@@ -14,27 +18,6 @@ import "./App.css";
 
 // Very simple adapter to make @othent/kms v1 work with the new playground. This could be improved by manually
 // re-defining all methods so that we could simulate the `auth` events.
-
-/*
-import * as othent from "@othent/kms";
-
-class Othent {
-  constructor() {
-    return {
-      ...othent,
-      walletName: "@othent/kms",
-      walletVersion: "1.0.12",
-      config: {},
-      startTabSynching: () => {},
-      addEventListener : () => {},
-      removeAuthEventListener : () => {},
-    };
-  }
-}
-
-const b64ToUint8Array = (str) => str;
-const binaryDataTypeToString = (str) => str;
-*/
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -99,7 +82,7 @@ function App() {
     // setSettings,
   ] = useState({
     // Playground:
-    useStrings: false,
+    useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
 
     // Othent:
@@ -134,11 +117,11 @@ function App() {
       appInfo,
 
       // Local server:
-      // serverBaseURL: "http://localhost:3010",
+      serverBaseURL: "http://localhost:3010",
 
       // Development Auth0 tenant and app:
-      // auth0Domain: "gmzcodes-test.eu.auth0.com",
-      // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+      auth0Domain: "gmzcodes-test.eu.auth0.com",
+      auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
     });
 
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
@@ -633,6 +616,7 @@ function App() {
       handleWalletName,
       handleWalletVersion,
       handleConfig,
+      handleAppInfo,
       handleGetArweaveConfig,
       handleGetPermissions,
     ];

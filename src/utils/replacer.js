@@ -1,7 +1,4 @@
-import { uint8ArrayTob64Url } from "@othent/kms";
-
-// When using @othent/kms v1:
-// const uint8ArrayTob64Url = (obj) => JSON.stringify(obj);
+import { uint8ArrayTob64Url } from "./othent";
 
 export function replacer(_, value) {
   let uint8Array;
