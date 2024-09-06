@@ -117,11 +117,11 @@ function App() {
       appInfo,
 
       // Local server:
-      serverBaseURL: "http://localhost:3010",
+      // serverBaseURL: "http://localhost:3010",
 
       // Development Auth0 tenant and app:
-      auth0Domain: "gmzcodes-test.eu.auth0.com",
-      auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+      // auth0Domain: "gmzcodes-test.eu.auth0.com",
+      // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
     });
 
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
