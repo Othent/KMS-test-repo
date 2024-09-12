@@ -379,10 +379,11 @@ function App() {
 
       const isValid =
         (await arweave.transactions.verify(signedTransaction)) &&
-        transaction !== signedTransaction;
+        (Othent.walletVersion.startsWith("1.") ||
+          transaction !== signedTransaction);
 
       return {
-        result: "<SignedTransaction>",
+        result: `<SignedTransaction txId="${signedTransaction.id}">`,
         postResult,
         isValid,
       };
