@@ -1,4 +1,4 @@
-import { uint8ArrayTob64Url } from "@othent/kms";
+import { uint8ArrayTob64Url } from "./othent";
 
 export function replacer(_, value) {
   let uint8Array;

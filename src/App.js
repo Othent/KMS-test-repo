@@ -1,4 +1,8 @@
-import { Othent, b64ToUint8Array, binaryDataTypeToString } from "@othent/kms";
+import {
+  Othent,
+  b64ToUint8Array,
+  binaryDataTypeToString,
+} from "./utils/othent";
 import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
@@ -11,6 +15,9 @@ import { LogItem } from "./components/LogItem";
 import { replacer } from "./utils/replacer";
 
 import "./App.css";
+
+// Very simple adapter to make @othent/kms v1 work with the new playground. This could be improved by manually
+// re-defining all methods so that we could simulate the `auth` events.
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -75,12 +82,11 @@ function App() {
     // setSettings,
   ] = useState({
     // Playground:
-    useStrings: false,
+    useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
 
     // Othent:
     serverBaseURL: undefined,
-    // serverBaseURL: "http://localhost:3010", // Local server
     auth0Strategy: "refresh-tokens",
     auth0Cache: "memory",
     auth0LogInMethod: "popup",
@@ -109,6 +115,13 @@ function App() {
       persistCookie,
       persistLocalStorage,
       appInfo,
+
+      // Local server:
+      // serverBaseURL: "http://localhost:3010",
+
+      // Development Auth0 tenant and app:
+      // auth0Domain: "gmzcodes-test.eu.auth0.com",
+      // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
     });
 
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
@@ -366,10 +379,11 @@ function App() {
 
       const isValid =
         (await arweave.transactions.verify(signedTransaction)) &&
-        transaction !== signedTransaction;
+        (Othent.walletVersion.startsWith("1.") ||
+          transaction !== signedTransaction);
 
       return {
-        result: "<SignedTransaction>",
+        result: `<SignedTransaction txId="${signedTransaction.id}">`,
         postResult,
         isValid,
       };
@@ -603,6 +617,7 @@ function App() {
       handleWalletName,
       handleWalletVersion,
       handleConfig,
+      handleAppInfo,
       handleGetArweaveConfig,
       handleGetPermissions,
     ];
