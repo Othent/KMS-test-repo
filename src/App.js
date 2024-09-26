@@ -588,6 +588,15 @@ function App() {
     { name: "getPermissions" },
   );
 
+  const handleGetServerInfo = getHandler(
+    async () => {
+      const result = await othent.__getServerInfo();
+
+      return { result };
+    },
+    { name: "__getServerInfo" },
+  );
+
   // AUTO-TEST WIZARD:
 
   const handleTestAll = async () => {
@@ -620,6 +629,7 @@ function App() {
       handleAppInfo,
       handleGetArweaveConfig,
       handleGetPermissions,
+      handleGetServerInfo,
     ];
 
     for (const methodFn of methodsUnderTest) {
@@ -985,6 +995,14 @@ function App() {
           {...results["getPermissions"]}
           name="getPermissions()"
           onClick={handleGetPermissions}
+        />
+      </div>
+
+      <div className="block testButtons__grid">
+        <TestButton
+          {...results["__getServerInfo"]}
+          name="__getServerInfo()"
+          onClick={handleGetServerInfo}
         />
       </div>
 

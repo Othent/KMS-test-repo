@@ -32,8 +32,8 @@ To run it with a local `KeyManagementService` instance:
 
 2. Inside `@othent/kms` (`../KeyManagementService`), run `pnpm dev`.
 
-3. Inside this repo, run `pnpm add ../KeyManagementService/ && pnpm link ../KeyManagementService/`. See [`pnpm link`](https://pnpm.io/cli/link).
+3. Inside this repo, run `pnpm link-othent` (`pnpm add ../KeyManagementService/ && pnpm link ../KeyManagementService/`). See [`pnpm link`](https://pnpm.io/cli/link).
 
-   You can later revert this with `pnpm add @othent/kms@latest`.
+   You can later revert this with `pnpm install-othent` (`pnpm add @othent/kms@latest`).
 
 <br />
