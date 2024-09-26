@@ -4,7 +4,7 @@
   "description": "An interactive playground / demo / example app using Othent KMS JS SDK",
   "private": true,
   "dependencies": {
-    "@othent/kms": "link:../KeyManagementService",
+    "@othent/kms": "^2.0.0",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "react": "^18.3.1",
