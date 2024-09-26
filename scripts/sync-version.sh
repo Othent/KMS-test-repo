@@ -8,12 +8,12 @@ fi
 othentVersion=$(node -p "require('$packageJSON').dependencies['@othent/kms'].replace('^', '')")
 
 if [[ $othentVersion == link:* ]]; then
-  echo -e "\033[0;31mCan't update package.json version as you are using a local '@othent/kms'. Run 'pnpm install-othent' to fix that."
+  echo -e "\033[0;31mCan't update package.json version as you are using a local '@othent/kms'. Run 'pnpm install-othent' to fix that.\033[0m"
   exit 0
 fi
 
 if [ -z "$othentVersion" ]; then
-    echo -e "\033[0;31mCould not read '@othent/kms' version!"
+    echo -e "\033[0;31mCould not read '@othent/kms' version!\033[0m"
     exit 1
 fi
 
