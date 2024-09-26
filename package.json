@@ -4,7 +4,7 @@
   "description": "An interactive playground / demo / example app using Othent KMS JS SDK",
   "private": true,
   "dependencies": {
-    "@othent/kms": "^2.0.0",
+    "@othent/kms": "link:../KeyManagementService",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "react": "^18.3.1",
@@ -30,7 +30,9 @@
     "nuke": "pnpm clean && rm -rf node_modules pnpm-lock.yaml",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prettier": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "link-othent": "pnpm add ../KeyManagementService/ && pnpm link ../KeyManagementService/",
+    "install-othent": "pnpm add @othent/kms@latest"
   },
   "eslintConfig": {
     "extends": [
