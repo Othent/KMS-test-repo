@@ -6,12 +6,10 @@ if [ ! -f $packageJSON ]; then
 fi
 
 othentVersion=$(node -p "require('$packageJSON').dependencies['@othent/kms'].replace('^', '')")
-originalOthentVersion=$othentVersion
 
-if [[ $originalOthentVersion == link:* ]]; then
-  echo -e "\033[0;32m✔\033[0m Reinstalling latest '@othent/kms' version..."
-  pnpm install-othent
-  othentVersion=$(node -p "require('$packageJSON').dependencies['@othent/kms'].replace('^', '')")
+if [[ $othentVersion == link:* ]]; then
+  echo -e "\033[0;31mCan't update package.json version as you are using a local '@othent/kms'. Run 'pnpm install-othent' to fix that."
+  exit 0
 fi
 
 if [ -z "$othentVersion" ]; then
@@ -26,8 +24,3 @@ sed -i -e "s/\"version\": \".*\"/\"version\": \"${othentVersion}\"/" ./package.j
 # Note there's no g flag used in the regular expression to make sure only one line is affected (just in case).
 
 git add ./package.json
-
-if [[ $originalOthentVersion == link:* ]]; then
-  echo -e "\033[0;32m✔\033[0m Restoring the linked '@othent/kms' previously in use..."
-  pnpm link-othent
-fi
