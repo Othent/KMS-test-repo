@@ -9,13 +9,13 @@ othentVersion=$(node -p "require('$packageJSON').dependencies['@othent/kms'].rep
 originalOthentVersion=$othentVersion
 
 if [[ $originalOthentVersion == link:* ]]; then
-  echo -e "\033[0;32m✔\033[0m Reinstalling latest `@othent/kms` version..."
+  echo -e "\033[0;32m✔\033[0m Reinstalling latest '@othent/kms' version..."
   pnpm install-othent
   othentVersion=$(node -p "require('$packageJSON').dependencies['@othent/kms'].replace('^', '')")
 fi
 
 if [ -z "$othentVersion" ]; then
-    echo -e "\033[0;31mCould not read `@othent/kms` version!"
+    echo -e "\033[0;31mCould not read '@othent/kms' version!"
     exit 1
 fi
 
@@ -28,6 +28,6 @@ sed -i -e "s/\"version\": \".*\"/\"version\": \"${othentVersion}\"/" ./package.j
 git add ./package.json
 
 if [[ $originalOthentVersion == link:* ]]; then
-  echo -e "\033[0;32m✔\033[0m Restoring the linked `@othent/kms` previously in use..."
+  echo -e "\033[0;32m✔\033[0m Restoring the linked '@othent/kms' previously in use..."
   pnpm link-othent
 fi
