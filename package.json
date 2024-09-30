@@ -1,10 +1,10 @@
 {
   "name": "@othent/kms-playground",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "An interactive playground / demo / example app using Othent KMS JS SDK",
   "private": true,
   "dependencies": {
-    "@othent/kms": "^2.1.0",
+    "@othent/kms": "^2.1.1",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "react": "^18.3.1",
