@@ -1,8 +1,4 @@
-import {
-  Othent,
-  b64ToUint8Array,
-  binaryDataTypeToString,
-} from "./utils/othent";
+import { Othent, UI8A, BDT } from "./utils/othent";
 import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { DataItem } from "warp-arbundles";
@@ -127,7 +123,7 @@ function App() {
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
 
     Object.entries(nextOthent.config).forEach(([key, value]) => {
-      console.log(` ${key.padStart(13)} = ${value}`);
+      console.log(` ${key.padStart(29)} = ${value}`);
     });
 
     console.groupEnd();
@@ -432,7 +428,7 @@ function App() {
 
       const b64Ciphertext = inputsRef.current.decryptCiphertext?.value || "";
       const encryptedData = b64Ciphertext
-        ? b64ToUint8Array(b64Ciphertext)
+        ? UI8A.from(b64Ciphertext, "B64StringOrUrlString")
         : await othent.encrypt(plaintext);
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
@@ -442,7 +438,7 @@ function App() {
       //   : encryptReturn;
 
       const result = await othent.decrypt(encryptedData);
-      const resultString = binaryDataTypeToString(result);
+      const resultString = BDT.decode(result);
 
       // Assuming we haven't changed the input field in for `encrypt()` or took the encrypted value from somewhere else:
       const isValid = resultString === dataStr;
@@ -510,7 +506,7 @@ function App() {
       const b64Signature =
         inputsRef.current.verifyMessageSignature?.value || "";
       const signedData = b64Signature
-        ? b64ToUint8Array(b64Signature)
+        ? UI8A.from(b64Signature, "B64StringOrUrlString")
         : await othent.signMessage(data);
 
       const result = await othent.verifyMessage(data, signedData);
