@@ -1,4 +1,4 @@
-import { uint8ArrayTob64Url } from "./othent";
+import { B64Url } from "./othent";
 
 export function replacer(_, value) {
   let uint8Array;
@@ -15,5 +15,5 @@ export function replacer(_, value) {
     return value;
   }
 
-  return uint8ArrayTob64Url(uint8Array);
+  return B64Url.from(uint8Array);
 }
