@@ -31,6 +31,9 @@ const appInfo = {
   env: "", // This will be automatically set to `"development"` when running in localhost or `"production"` otherwise.
 };
 
+// Needed just to get the Buffer polyfill:
+new Othent({ appInfo });
+
 const DEFAULT_TX_DATA = `<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>`;
 const DEFAULT_TX_DATA_TYPE = "text/html";
 const DEFAULT_SECRET = "This is a very secret message... 🤫";
@@ -38,6 +41,101 @@ const DEFAULT_DATA_FOR_SIGNING = "This data needs to be signed... ✅";
 const DEFAULT_DATA_FOR_HASHING = "This data needs to be hashed... 🗜️";
 
 function App() {
+  const [iv, setIv] = useState(null);
+
+  useEffect(() => {
+    async function encryptSymmetric(plaintext, key) {
+      // create a random 96-bit initialization vector (IV)
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      // encode the text you want to encrypt
+      const encodedPlaintext = new TextEncoder().encode(plaintext);
+
+      // encrypt the text with the secret key
+      const ciphertext = await crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv,
+        },
+        key,
+        encodedPlaintext,
+      );
+
+      // return the encrypted text "ciphertext" and the IV
+      // encoded in base64
+      return {
+        ciphertext: Buffer.from(ciphertext).toString("base64"),
+        iv: Buffer.from(iv).toString("base64"),
+      };
+    }
+
+    async function initIv() {
+      const nextIv = await window.crypto.getRandomValues(new Uint8Array(16));
+
+      setIv(nextIv);
+
+      // some plaintext you want to encrypt
+      const plaintext = "The quick brown fox jumps over the lazy dog";
+
+      // eslint-disable-next-line no-undef
+      // console.log("TEST", typeof globalThis.Buffer.from, typeof Buffer.from);
+
+      // RSA KEY:
+
+      const keyPair = await window.crypto.subtle.generateKey(
+        {
+          name: "RSA-OAEP",
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([1, 0, 1]),
+          extractable: true,
+          hash: {
+            name: "SHA-256",
+          },
+        },
+        true,
+        ["encrypt", "decrypt"],
+      );
+
+      try {
+        const resultRSA = await encryptSymmetric(plaintext, keyPair.publicKey);
+
+        console.log("resultRSA =", resultRSA);
+      } catch (err) {
+        console.log("RSA ERR =", err);
+      }
+
+      // AES KEY:
+
+      const aesKeyBuffer = Buffer.from(
+        crypto.getRandomValues(new Uint8Array(32)),
+      );
+
+      const aesKeyB64 = await crypto.subtle.importKey(
+        "raw",
+        aesKeyBuffer,
+        {
+          name: "AES-GCM",
+          length: 256,
+        },
+        true,
+        ["encrypt", "decrypt"],
+      );
+
+      try {
+        const resultAES = await encryptSymmetric(plaintext, aesKeyB64);
+
+        console.log("resultAES =", resultAES);
+      } catch (err) {
+        // InvalidAccessError: key.algorithm does not match that of operation
+        console.log("AES ERR =", err);
+      }
+    }
+
+    setTimeout(() => {
+      initIv();
+    }, 500);
+  }, []);
+
   const inputsRef = useRef({});
 
   const assignRef = useCallback((inputElement) => {
@@ -67,6 +165,7 @@ function App() {
       // Playground:
       useStrings,
       postTransactions,
+      walletType,
 
       // Othent:
       serverBaseURL,
@@ -84,6 +183,7 @@ function App() {
     // Playground:
     useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
+    walletType: "injected",
 
     // Othent:
     serverBaseURL: undefined,
@@ -104,36 +204,45 @@ function App() {
   };
 
   const othent = useMemo(() => {
-    const nextOthent = new Othent({
-      debug: true,
-      serverBaseURL,
-      auth0Strategy,
-      auth0Cache,
-      auth0LogInMethod,
-      autoConnect,
-      throwErrors,
-      persistCookie,
-      persistLocalStorage,
-      appInfo,
+    let nextOthent = window.arweaveWallet;
 
-      // Local server:
-      // serverBaseURL: "http://localhost:3010",
+    if (walletType === "othent") {
+      nextOthent = new Othent({
+        debug: true,
+        serverBaseURL,
+        auth0Strategy,
+        auth0Cache,
+        auth0LogInMethod,
+        autoConnect,
+        throwErrors,
+        persistCookie,
+        persistLocalStorage,
+        appInfo,
 
-      // Development Auth0 tenant and app:
-      // auth0Domain: "gmzcodes-test.eu.auth0.com",
-      // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
-    });
+        // Local server:
+        // serverBaseURL: "http://localhost:3010",
+
+        // Development Auth0 tenant and app:
+        // auth0Domain: "gmzcodes-test.eu.auth0.com",
+        // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+      });
+    }
+
+    if (!nextOthent) {
+      throw new Error(`Could not initialize ${walletType} wallet.`);
+    }
 
     console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
 
-    Object.entries(nextOthent.config).forEach(([key, value]) => {
-      console.log(` ${key.padStart(13)} = ${value}`);
+    Object.entries(nextOthent?.config || []).forEach(([key, value]) => {
+      console.log(` ${key.padStart(29)} = ${value}`);
     });
 
     console.groupEnd();
 
     return nextOthent;
   }, [
+    walletType,
     serverBaseURL,
     auth0Strategy,
     auth0Cache,
@@ -150,6 +259,8 @@ function App() {
   const hasLoggedInRef = useRef(false);
 
   useEffect(() => {
+    if (othent.walletName !== "Othent KMS") return;
+
     const cleanupFn = othent.startTabSynching();
 
     if (othent.config.auth0LogInMethod === "redirect") {
@@ -200,6 +311,8 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (othent.walletName !== "Othent KMS") return;
+
     const removeAuthEventListener = othent.addEventListener(
       "auth",
       handleAuthChange,
@@ -280,7 +393,17 @@ function App() {
 
   const handleConnect = getHandler(
     async () => {
-      const result = await othent.connect();
+      const result = await othent.connect([
+        "ACCESS_ADDRESS",
+        "ACCESS_ALL_ADDRESSES",
+        "ACCESS_ARWEAVE_CONFIG",
+        "ACCESS_PUBLIC_KEY",
+        "DECRYPT",
+        "DISPATCH",
+        "ENCRYPT",
+        "SIGN_TRANSACTION",
+        "SIGNATURE",
+      ]);
 
       return { result };
     },
@@ -417,7 +540,18 @@ function App() {
       const dataStr =
         inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
       const plaintext = normalizeInput(dataStr);
-      const result = await othent.encrypt(plaintext);
+
+      // Legacy:
+      // const result = await othent.encrypt(plaintext, { algorithm: "<ALGO>" });
+
+      // New:
+      // AesGcmParams: iv: Not a BufferSource
+      // There seems to be a problem with serialization, as `iv` arrives to the background script as `{0: 60, 1: 186, 2: 248, 3: 30, ... }`
+      // Data is properly parsed/converted with `data = new Uint8Array(Object.values(data));`.
+      const result = await othent.encrypt(plaintext, {
+        name: "AES-GCM",
+        iv,
+      });
 
       return { result, isValid: !!result, input: plaintext };
     },
@@ -433,7 +567,10 @@ function App() {
       const b64Ciphertext = inputsRef.current.decryptCiphertext?.value || "";
       const encryptedData = b64Ciphertext
         ? b64ToUint8Array(b64Ciphertext)
-        : await othent.encrypt(plaintext);
+        : await othent.encrypt(plaintext, {
+            name: "AES-CBC",
+            iv: iv,
+          });
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
       // (not a regular one) `string` directly:
@@ -441,7 +578,11 @@ function App() {
       //   ? uint8ArrayTob64Url(encryptReturn)
       //   : encryptReturn;
 
-      const result = await othent.decrypt(encryptedData);
+      const result = await othent.decrypt(encryptedData, {
+        name: "AES-CBC",
+        iv: iv,
+      });
+
       const resultString = binaryDataTypeToString(result);
 
       // Assuming we haven't changed the input field in for `encrypt()` or took the encrypted value from somewhere else:
