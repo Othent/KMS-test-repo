@@ -548,6 +548,7 @@ function App() {
       // AesGcmParams: iv: Not a BufferSource
       // There seems to be a problem with serialization, as `iv` arrives to the background script as `{0: 60, 1: 186, 2: 248, 3: 30, ... }`
       // Data is properly parsed/converted with `data = new Uint8Array(Object.values(data));`.
+      // See https://security.stackexchange.com/questions/149064/is-it-possible-to-combine-rsa-and-aes
       const result = await othent.encrypt(plaintext, {
         name: "AES-GCM",
         iv,
