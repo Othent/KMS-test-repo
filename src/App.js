@@ -313,6 +313,21 @@ function App() {
     async () => {
       const result = await arweaveWallet.connect(ALL_PERMISSIONS);
 
+      if (arweaveWallet.walletName === "ArConnect") {
+        const walletAddress = await arweaveWallet.getActiveAddress();
+        const walletNames = await arweaveWallet.getWalletNames();
+
+        setAuthState({
+          userDetails: {
+            name: walletNames[walletAddress],
+            email: "",
+            walletAddress,
+            authProvider: "ArConnect",
+          },
+          isAuthenticated: true,
+        });
+      }
+
       return { result };
     },
     { name: "connect" },
@@ -321,6 +336,10 @@ function App() {
   const handleDisconnect = getHandler(
     async () => {
       const result = await arweaveWallet.disconnect();
+
+      if (arweaveWallet.walletName === "ArConnect") {
+        setAuthState({});
+      }
 
       return { result, isValid: true };
     },
@@ -450,7 +469,9 @@ function App() {
       const dataStr =
         inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
       const plaintext = normalizeInput(dataStr);
-      const result = await arweaveWallet.encrypt(plaintext);
+      const result = await arweaveWallet.encrypt(plaintext, {
+        name: "RSA-OAEP",
+      });
 
       return { result, isValid: !!result, input: plaintext };
     },
@@ -466,7 +487,7 @@ function App() {
       const b64Ciphertext = inputsRef.current.decryptCiphertext?.value || "";
       const encryptedData = b64Ciphertext
         ? b64ToUint8Array(b64Ciphertext)
-        : await arweaveWallet.encrypt(plaintext);
+        : await arweaveWallet.encrypt(plaintext, { name: "RSA-OAEP" });
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
       // (not a regular one) `string` directly:
@@ -474,7 +495,9 @@ function App() {
       //   ? uint8ArrayTob64Url(encryptReturn)
       //   : encryptReturn;
 
-      const result = await arweaveWallet.decrypt(encryptedData);
+      const result = await arweaveWallet.decrypt(encryptedData, {
+        name: "RSA-OAEP",
+      });
       const resultString = binaryDataTypeToString(result);
 
       // Assuming we haven't changed the input field in for `encrypt()` or took the encrypted value from somewhere else:
@@ -492,7 +515,7 @@ function App() {
       const dataStr =
         inputsRef.current.signatureData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
-      const result = await arweaveWallet.signature(data);
+      const result = await arweaveWallet.signature(data, { name: "RSA-PSS" });
 
       // This won't work.
       // TODO: Do we need to "re-implement" most of `verifyMessage()` in userland to verify?
