@@ -26,16 +26,30 @@ const arweave = Arweave.init({
 });
 
 const appInfo = {
-  name: "Othent KMS Test Repo",
-  version: Othent.walletVersion,
+  name: "Arweave Wallet Playground",
+  version: "2.1.1",
   env: "", // This will be automatically set to `"development"` when running in localhost or `"production"` otherwise.
 };
+
+// Needed just to get the Buffer polyfill:
+new Othent({ appInfo });
 
 const DEFAULT_TX_DATA = `<html><head><meta charset="UTF-8"><title>Hello world!</title></head><body>Hello world!</body></html>`;
 const DEFAULT_TX_DATA_TYPE = "text/html";
 const DEFAULT_SECRET = "This is a very secret message... 🤫";
 const DEFAULT_DATA_FOR_SIGNING = "This data needs to be signed... ✅";
 const DEFAULT_DATA_FOR_HASHING = "This data needs to be hashed... 🗜️";
+const ALL_PERMISSIONS = [
+  "ACCESS_ADDRESS",
+  "ACCESS_ALL_ADDRESSES",
+  "ACCESS_ARWEAVE_CONFIG",
+  "ACCESS_PUBLIC_KEY",
+  "DECRYPT",
+  "DISPATCH",
+  "ENCRYPT",
+  "SIGN_TRANSACTION",
+  "SIGNATURE",
+];
 
 function App() {
   const inputsRef = useRef({});
@@ -67,6 +81,7 @@ function App() {
       // Playground:
       useStrings,
       postTransactions,
+      walletType,
 
       // Othent:
       serverBaseURL,
@@ -84,6 +99,7 @@ function App() {
     // Playground:
     useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
+    walletType: "injected",
 
     // Othent:
     serverBaseURL: undefined,
@@ -103,37 +119,48 @@ function App() {
     return useStrings ? dataStr : new TextEncoder().encode(dataStr);
   };
 
-  const othent = useMemo(() => {
-    const nextOthent = new Othent({
-      debug: true,
-      serverBaseURL,
-      auth0Strategy,
-      auth0Cache,
-      auth0LogInMethod,
-      autoConnect,
-      throwErrors,
-      persistCookie,
-      persistLocalStorage,
-      appInfo,
+  const arweaveWallet = useMemo(() => {
+    let nextArweaveWallet = window.arweaveWallet;
 
-      // Local server:
-      // serverBaseURL: "http://localhost:3010",
+    if (walletType === "othent") {
+      nextArweaveWallet = new Othent({
+        debug: true,
+        serverBaseURL,
+        auth0Strategy,
+        auth0Cache,
+        auth0LogInMethod,
+        autoConnect,
+        throwErrors,
+        persistCookie,
+        persistLocalStorage,
+        appInfo,
 
-      // Development Auth0 tenant and app:
-      // auth0Domain: "gmzcodes-test.eu.auth0.com",
-      // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
-    });
+        // Local server:
+        // serverBaseURL: "http://localhost:3010",
 
-    console.group(`${nextOthent.walletName} @ ${nextOthent.walletVersion}`);
+        // Development Auth0 tenant and app:
+        // auth0Domain: "gmzcodes-test.eu.auth0.com",
+        // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+      });
+    }
 
-    Object.entries(nextOthent.config).forEach(([key, value]) => {
-      console.log(` ${key.padStart(13)} = ${value}`);
+    if (!nextArweaveWallet) {
+      throw new Error(`Could not initialize ${walletType} wallet.`);
+    }
+
+    console.group(
+      `${nextArweaveWallet.walletName} @ ${nextArweaveWallet.walletVersion}`,
+    );
+
+    Object.entries(nextArweaveWallet?.config || {}).forEach(([key, value]) => {
+      console.log(` ${key.padStart(29)} = ${value}`);
     });
 
     console.groupEnd();
 
-    return nextOthent;
+    return nextArweaveWallet;
   }, [
+    walletType,
     serverBaseURL,
     auth0Strategy,
     auth0Cache,
@@ -150,11 +177,13 @@ function App() {
   const hasLoggedInRef = useRef(false);
 
   useEffect(() => {
-    const cleanupFn = othent.startTabSynching();
+    if (arweaveWallet.walletName !== "Othent KMS") return;
 
-    if (othent.config.auth0LogInMethod === "redirect") {
+    const cleanupFn = arweaveWallet.startTabSynching();
+
+    if (arweaveWallet.config.auth0LogInMethod === "redirect") {
       // This is not needed (NOOP) unless auth0LogInMethod = "redirect":
-      othent.completeConnectionAfterRedirect();
+      arweaveWallet.completeConnectionAfterRedirect();
     }
 
     if (!hasLoggedInRef.current) return;
@@ -167,7 +196,7 @@ function App() {
       try {
         // This won't work if `auth0Strategy = "refresh-memory"`.
 
-        await othent.connect();
+        await arweaveWallet.connect();
       } catch (err) {
         console.log("connect() error:", err);
       }
@@ -180,7 +209,7 @@ function App() {
     return cleanupFn;
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [othent]);
+  }, [arweaveWallet]);
 
   // We need to use `useCallback` here as React will call the `useEffect` below twice in development mode, and we don't
   // want to add duplicate event listeners. However, if we define the listener function inside `useEffect`, two
@@ -200,7 +229,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const removeAuthEventListener = othent.addEventListener(
+    if (arweaveWallet.walletName !== "Othent KMS") return;
+
+    const removeAuthEventListener = arweaveWallet.addEventListener(
       "auth",
       handleAuthChange,
     );
@@ -209,7 +240,7 @@ function App() {
       ? () => {
           /* NOOP */
         }
-      : othent.addEventListener("error", handleError);
+      : arweaveWallet.addEventListener("error", handleError);
 
     return () => {
       removeAuthEventListener();
@@ -217,7 +248,7 @@ function App() {
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [othent, throwErrors]);
+  }, [arweaveWallet, throwErrors]);
 
   function getHandler(fn, options) {
     const { name } = options;
@@ -280,7 +311,7 @@ function App() {
 
   const handleConnect = getHandler(
     async () => {
-      const result = await othent.connect();
+      const result = await arweaveWallet.connect(ALL_PERMISSIONS);
 
       return { result };
     },
@@ -289,7 +320,7 @@ function App() {
 
   const handleDisconnect = getHandler(
     async () => {
-      const result = await othent.disconnect();
+      const result = await arweaveWallet.disconnect();
 
       return { result, isValid: true };
     },
@@ -298,7 +329,7 @@ function App() {
 
   const handleRequireAuth = getHandler(
     async () => {
-      const result = await othent.requireAuth();
+      const result = await arweaveWallet.requireAuth();
 
       return { result, isValid: true };
     },
@@ -307,7 +338,7 @@ function App() {
 
   const handleIsAuthenticated = getHandler(
     async () => {
-      const result = othent.isAuthenticated;
+      const result = arweaveWallet.isAuthenticated;
 
       return { result, isValid: typeof result === "boolean" };
     },
@@ -318,7 +349,7 @@ function App() {
 
   const handleGetActiveAddress = getHandler(
     async () => {
-      const result = await othent.getActiveAddress();
+      const result = await arweaveWallet.getActiveAddress();
       return { result };
     },
     { name: "getActiveAddress" },
@@ -326,7 +357,7 @@ function App() {
 
   const handleGetActivePublicKey = getHandler(
     async () => {
-      const result = await othent.getActivePublicKey();
+      const result = await arweaveWallet.getActivePublicKey();
       return { result };
     },
     { name: "getActivePublicKey" },
@@ -334,7 +365,7 @@ function App() {
 
   const handleGetAllAddresses = getHandler(
     async () => {
-      const result = await othent.getAllAddresses();
+      const result = await arweaveWallet.getAllAddresses();
       return { result };
     },
     { name: "getAllAddresses" },
@@ -342,7 +373,7 @@ function App() {
 
   const handleGetWalletNames = getHandler(
     async () => {
-      const result = await othent.getWalletNames();
+      const result = await arweaveWallet.getWalletNames();
       return { result };
     },
     { name: "getWalletNames" },
@@ -350,7 +381,7 @@ function App() {
 
   const handleGetUserDetails = getHandler(
     async () => {
-      const result = await othent.getUserDetails();
+      const result = await arweaveWallet.getUserDetails();
       return { result };
     },
     { name: "getUserDetails" },
@@ -369,7 +400,7 @@ function App() {
         inputsRef.current.signType?.value || DEFAULT_TX_DATA_TYPE,
       );
 
-      const signedTransaction = await othent.sign(transaction);
+      const signedTransaction = await arweaveWallet.sign(transaction);
 
       let postResult = null;
 
@@ -379,7 +410,7 @@ function App() {
 
       const isValid =
         (await arweave.transactions.verify(signedTransaction)) &&
-        (Othent.walletVersion.startsWith("1.") ||
+        (arweaveWallet.walletVersion.startsWith("1.") ||
           transaction !== signedTransaction);
 
       return {
@@ -393,6 +424,8 @@ function App() {
 
   const handleDispatch = getHandler(
     async () => {
+      // TODO: Why is dispatch asking for 2 signatures?
+
       const transaction = await arweave.createTransaction({
         data: inputsRef.current.dispatchData?.value || DEFAULT_TX_DATA,
       });
@@ -402,7 +435,7 @@ function App() {
         inputsRef.current.dispatchType?.value || DEFAULT_TX_DATA_TYPE,
       );
 
-      const result = await othent.dispatch(transaction);
+      const result = await arweaveWallet.dispatch(transaction);
       const transactionURL = `https://viewblock.io/arweave/tx/${result.id}`;
 
       return { result, isValid: !!result, transactionURL };
@@ -417,7 +450,7 @@ function App() {
       const dataStr =
         inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
       const plaintext = normalizeInput(dataStr);
-      const result = await othent.encrypt(plaintext);
+      const result = await arweaveWallet.encrypt(plaintext);
 
       return { result, isValid: !!result, input: plaintext };
     },
@@ -433,7 +466,7 @@ function App() {
       const b64Ciphertext = inputsRef.current.decryptCiphertext?.value || "";
       const encryptedData = b64Ciphertext
         ? b64ToUint8Array(b64Ciphertext)
-        : await othent.encrypt(plaintext);
+        : await arweaveWallet.encrypt(plaintext);
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
       // (not a regular one) `string` directly:
@@ -441,7 +474,7 @@ function App() {
       //   ? uint8ArrayTob64Url(encryptReturn)
       //   : encryptReturn;
 
-      const result = await othent.decrypt(encryptedData);
+      const result = await arweaveWallet.decrypt(encryptedData);
       const resultString = binaryDataTypeToString(result);
 
       // Assuming we haven't changed the input field in for `encrypt()` or took the encrypted value from somewhere else:
@@ -459,11 +492,11 @@ function App() {
       const dataStr =
         inputsRef.current.signatureData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
-      const result = await othent.signature(data);
+      const result = await arweaveWallet.signature(data);
 
       // This won't work.
       // TODO: Do we need to "re-implement" most of `verifyMessage()` in userland to verify?
-      // const isValid = await othent.verifyMessage(dataToSign, result);
+      // const isValid = await arweaveWallet.verifyMessage(dataToSign, result);
 
       return { result, isValid: !!result, input: data };
     },
@@ -474,7 +507,7 @@ function App() {
     async () => {
       const dataStr =
         inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING;
-      const result = await othent.signDataItem({ data: dataStr });
+      const result = await arweaveWallet.signDataItem({ data: dataStr });
       const dataItem = new DataItem(Buffer.from(result));
 
       // TODO: Not working:
@@ -489,12 +522,51 @@ function App() {
     { name: "signDataItem" },
   );
 
+  const handleBatchSignDataItem = getHandler(
+    async () => {
+      const dataStr1 = `${inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING} (1/3)`;
+      const dataStr2 = `${inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING} (2/3)`;
+      const dataStr3 = `${inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING} (3/3)`;
+
+      const result = await arweaveWallet.batchSignDataItem([
+        { data: dataStr1 },
+        { data: dataStr2 },
+        { data: dataStr3 },
+      ]);
+
+      const dataItems = result.map(
+        (dataItemSignatureBuffer) =>
+          new DataItem(Buffer.from(dataItemSignatureBuffer)),
+      );
+
+      const dataItemsIsValidPromises = dataItems.map((dataItem) => {
+        // TODO: Not working:
+        return dataItem.isValid().catch((err) => {
+          console.error("DataItem.isValid() error =", err);
+
+          return false;
+        });
+      });
+
+      const dataItemsIsValid = await Promise.allSettled(
+        dataItemsIsValidPromises,
+      );
+
+      const isValid = dataItemsIsValid.every((settledPromise) => {
+        return !!settledPromise.value;
+      });
+
+      return { result, isValid, input: [dataStr1, dataStr2, dataStr3] };
+    },
+    { name: "batchSignDataItem" },
+  );
+
   const handleSignMessage = getHandler(
     async () => {
       const dataStr =
         inputsRef.current.signMessageData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
-      const result = await othent.signMessage(data);
+      const result = await arweaveWallet.signMessage(data);
 
       return { result, isValid: !!result, input: data };
     },
@@ -511,9 +583,9 @@ function App() {
         inputsRef.current.verifyMessageSignature?.value || "";
       const signedData = b64Signature
         ? b64ToUint8Array(b64Signature)
-        : await othent.signMessage(data);
+        : await arweaveWallet.signMessage(data);
 
-      const result = await othent.verifyMessage(data, signedData);
+      const result = await arweaveWallet.verifyMessage(data, signedData);
 
       return { result, isValid: result, input: [data, signedData] };
     },
@@ -525,7 +597,7 @@ function App() {
       const dataStr =
         inputsRef.current.privateHashData?.value || DEFAULT_DATA_FOR_HASHING;
       const data = normalizeInput(dataStr);
-      const result = await othent.privateHash(data);
+      const result = await arweaveWallet.privateHash(data);
 
       return { result, isValid: !!result, input: data };
     },
@@ -536,7 +608,7 @@ function App() {
 
   const handleWalletName = getHandler(
     async () => {
-      const result = othent.walletName;
+      const result = arweaveWallet.walletName;
 
       return { result };
     },
@@ -545,7 +617,7 @@ function App() {
 
   const handleWalletVersion = getHandler(
     async () => {
-      const result = othent.walletVersion;
+      const result = arweaveWallet.walletVersion;
 
       return { result };
     },
@@ -554,7 +626,7 @@ function App() {
 
   const handleConfig = getHandler(
     async () => {
-      const result = othent.config;
+      const result = arweaveWallet.config;
 
       return { result };
     },
@@ -563,7 +635,7 @@ function App() {
 
   const handleAppInfo = getHandler(
     async () => {
-      const result = await othent.appInfo;
+      const result = await arweaveWallet.appInfo;
 
       return { result };
     },
@@ -572,7 +644,7 @@ function App() {
 
   const handleGetArweaveConfig = getHandler(
     async () => {
-      const result = await othent.getArweaveConfig();
+      const result = await arweaveWallet.getArweaveConfig();
 
       return { result };
     },
@@ -581,7 +653,7 @@ function App() {
 
   const handleGetPermissions = getHandler(
     async () => {
-      const result = await othent.getPermissions();
+      const result = await arweaveWallet.getPermissions();
 
       return { result };
     },
@@ -590,7 +662,7 @@ function App() {
 
   const handleGetServerInfo = getHandler(
     async () => {
-      const result = await othent.__getServerInfo();
+      const result = await arweaveWallet.__getServerInfo();
 
       return { result };
     },
@@ -620,6 +692,7 @@ function App() {
       handleDecrypt,
       handleSignature,
       handleSignDataItem,
+      handleBatchSignDataItem,
       handleSignMessage,
       handleVerifyMessage,
       handlePrivateHash,
@@ -640,7 +713,7 @@ function App() {
   return (
     <div className="app">
       <header className="header__base">
-        <h1 className="header__title">Othent KMS JS SDK Playground</h1>
+        <h1 className="header__title">Arweave Wallet Playground</h1>
         <p>Check the DevTools Console for additional information.</p>
         <UserCard
           userDetails={userDetails}
@@ -878,6 +951,29 @@ function App() {
                 label="signDataItem() result"
                 value={replacer(null, results["signDataItem"].result)}
                 hasError={!results["signDataItem"].isValid}
+                encoding="Base64"
+              />
+            </>
+          )}
+        </TestButton>
+
+        <TestButton
+          {...results["batchSignDataItem"]}
+          name="batchSignDataItem()"
+          onClick={handleBatchSignDataItem}
+        >
+          <TextField
+            name="batchSignDataItemData"
+            label="DataItem.data"
+            defaultValue={DEFAULT_DATA_FOR_SIGNING}
+            inputRef={assignRef}
+          />
+          {results["batchSignDataItem"]?.result === undefined ? null : (
+            <>
+              <TextField
+                label="batchSignDataItem() result"
+                value={replacer(null, results["batchSignDataItem"].result)}
+                hasError={!results["batchSignDataItem"].isValid}
                 encoding="Base64"
               />
             </>
