@@ -614,7 +614,10 @@ function App() {
       const dataStr =
         inputsRef.current.signatureData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
-      const result = await arweaveWallet.signature(data, { name: "RSA-PSS" });
+      const result = await arweaveWallet.signature(data, {
+        name: "RSA-PSS",
+        saltLength: 32,
+      });
 
       // This won't work.
       // TODO: Do we need to "re-implement" most of `verifyMessage()` in userland to verify?
