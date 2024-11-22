@@ -26,7 +26,7 @@ const arweave = Arweave.init({
 });
 
 const appInfo = {
-  name: "Arweave Wallet Playground",
+  name: "Arweave/AO Wallet Playground",
   version: "2.1.1",
   env: "", // This will be automatically set to `"development"` when running in localhost or `"production"` otherwise.
 };
@@ -52,29 +52,24 @@ const ALL_PERMISSIONS = [
 ];
 
 function App() {
+  // Inputs:
+
   const inputsRef = useRef({});
 
   const assignRef = useCallback((inputElement) => {
     if (inputElement) inputsRef.current[inputElement.name] = inputElement;
   }, []);
 
+  // User Details:
+
   const [{ userDetails, isAuthenticated }, setAuthState] = useState({});
 
-  const [showDetailsJSON, setShowDetailsJSON] = useState(false);
-  const [results, setResults] = useState({});
+  // Settings:
 
   const handleSettings = () =>
     alert(
       `UI not implemented yet.\n\nYou can see the current settings in the Console.\n\nTo change them, clone the demo project and edit them in the code (App.js file).`,
     );
-
-  const sortedResults = useMemo(() => {
-    const sortedResultsArray = Object.values(results).sort(
-      (a, b) => b.timestamp - a.timestamp,
-    );
-
-    return sortedResultsArray.length === 0 ? [] : sortedResultsArray;
-  }, [results]);
 
   const [
     {
@@ -82,6 +77,7 @@ function App() {
       useStrings,
       postTransactions,
       walletType,
+      logPosition,
 
       // Othent:
       serverBaseURL,
@@ -94,12 +90,13 @@ function App() {
       persistLocalStorage,
     },
     // TODO: Add UI for settings:
-    // setSettings,
+    setSettings,
   ] = useState({
     // Playground:
     useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
     walletType: "injected",
+    logPosition: "sticky",
 
     // Othent:
     serverBaseURL: undefined,
@@ -111,6 +108,104 @@ function App() {
     persistCookie: false,
     persistLocalStorage: true,
   });
+
+  const handleSwitchWallet = useCallback(() => {
+    setAuthState({});
+    setResults({});
+    setSettings((prevSettings) => ({
+      ...prevSettings,
+      walletType:
+        prevSettings.walletType === "injected" ? "othent" : "injected",
+    }));
+  }, []);
+
+  const handleToggleLogPosition = useCallback(() => {
+    setSettings((prevSettings) => ({
+      ...prevSettings,
+      logPosition: prevSettings.logPosition === "static" ? "sticky" : "static",
+    }));
+  }, []);
+
+  // Logs:
+
+  const logItemsElementRef = useRef(null);
+  const lastScrollTopRef = useRef(0);
+  const ignoreNextScrollRef = useRef(false);
+  const [showDetailsJSON, setShowDetailsJSON] = useState(false);
+  const [results, setResults] = useState({});
+  const [highlightedLogItemId, setHighlightedLogItemId] = useState("");
+  const sortedResults = useMemo(() => {
+    const sortedResultsArray = Object.values(results).sort(
+      (a, b) => b.timestamp - a.timestamp,
+    );
+
+    return sortedResultsArray.length === 0 ? [] : sortedResultsArray;
+  }, [results]);
+
+  useEffect(() => {
+    const logItemsElement = logItemsElementRef.current;
+
+    if (!logItemsElement || logPosition === "static") return;
+
+    if (highlightedLogItemId) {
+      const highlightedLogItem = Array.from(logItemsElement.children).find(
+        (logItem) => {
+          return logItem.id === highlightedLogItemId;
+        },
+      );
+
+      if (highlightedLogItem) {
+        lastScrollTopRef.current = logItemsElement.scrollTop;
+        ignoreNextScrollRef.current = true;
+        logItemsElement.scrollTop = highlightedLogItem.offsetTop - 16;
+      }
+    } else {
+      ignoreNextScrollRef.current = true;
+      logItemsElement.scrollTop = lastScrollTopRef.current;
+    }
+  }, [logPosition, results, highlightedLogItemId]);
+
+  const handleLogScroll = useCallback(
+    (e) => {
+      const logItemsElement = logItemsElementRef.current;
+
+      if (!logItemsElement || logPosition === "static") return;
+
+      if (ignoreNextScrollRef.current) {
+        ignoreNextScrollRef.current = false;
+
+        return;
+      }
+
+      lastScrollTopRef.current = logItemsElement.scrollTop;
+    },
+    [logPosition],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHighlightedLogItemId("");
+  }, []);
+
+  const handleMouseOver = useCallback((e) => {
+    let { target } = e;
+
+    while (
+      !target.classList.contains("testButton__button") &&
+      target.tagName !== "BODY"
+    ) {
+      target = target.parentElement;
+    }
+
+    const highlightedLogItemName = target
+      .querySelector("& > .testButton__text")
+      ?.textContent.replace("()", "");
+
+    setHighlightedLogItemId(
+      highlightedLogItemName ? `${highlightedLogItemName}LogItem` : "",
+    );
+  }, []);
+
+  // Wallet Functions / API:
 
   const normalizeInput = (dataStr) => {
     // OLD BACKEND + OLD SDK: Works with `string` inputs, doesn't work with `TextEncoder` inputs
@@ -254,6 +349,8 @@ function App() {
     const { name } = options;
 
     return async () => {
+      if (!(name in arweaveWallet)) return;
+
       setResults((prevResults) => ({
         ...prevResults,
         [name]: {
@@ -311,7 +408,9 @@ function App() {
 
   const handleConnect = getHandler(
     async () => {
-      const result = await arweaveWallet.connect(ALL_PERMISSIONS);
+      const result = await arweaveWallet.connect(
+        arweaveWallet.walletName === "ArConnect" ? ALL_PERMISSIONS : undefined,
+      );
 
       if (arweaveWallet.walletName === "ArConnect") {
         const walletAddress = await arweaveWallet.getActiveAddress();
@@ -620,7 +719,9 @@ function App() {
       const dataStr =
         inputsRef.current.privateHashData?.value || DEFAULT_DATA_FOR_HASHING;
       const data = normalizeInput(dataStr);
-      const result = await arweaveWallet.privateHash(data);
+      const result = await arweaveWallet.privateHash(data, {
+        hashAlgorithm: "SHA-256",
+      });
 
       return { result, isValid: !!result, input: data };
     },
@@ -734,23 +835,21 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div
+      className="app"
+      onMouseLeave={handleMouseLeave}
+      onMouseOver={handleMouseOver}
+    >
       <header className="header__base">
-        <h1 className="header__title">Arweave Wallet Playground</h1>
+        <h1 className="header__title">Arweave/AO Wallet Playground</h1>
         <p>Check the DevTools Console for additional information.</p>
+
         <UserCard
           userDetails={userDetails}
           isAuthenticated={isAuthenticated}
           showDetailsJSON={showDetailsJSON}
           setShowDetailsJSON={setShowDetailsJSON}
         />
-
-        <button className="header__testAllButton" onClick={handleTestAll}>
-          🧙‍♂️
-        </button>
-        <button className="header__settingsButton" onClick={handleSettings}>
-          ⚙️
-        </button>
       </header>
 
       <div className="block testButtons__grid">
@@ -758,24 +857,28 @@ function App() {
           {...results["connect"]}
           name="connect()"
           onClick={handleConnect}
+          disabled={!("connect" in arweaveWallet)}
         />
 
         <TestButton
           {...results["disconnect"]}
           name="disconnect()"
           onClick={handleDisconnect}
+          disabled={!("disconnect" in arweaveWallet)}
         />
 
         <TestButton
           {...results["requireAuth"]}
           name="requireAuth()"
           onClick={handleRequireAuth}
+          disabled={!("requireAuth" in arweaveWallet)}
         />
 
         <TestButton
           {...results["isAuthenticated"]}
           name="isAuthenticated"
           onClick={handleIsAuthenticated}
+          disabled={!("isAuthenticated" in arweaveWallet)}
         />
       </div>
 
@@ -784,35 +887,45 @@ function App() {
           {...results["getActiveAddress"]}
           name="getActiveAddress()"
           onClick={handleGetActiveAddress}
+          disabled={!("getActiveAddress" in arweaveWallet)}
         />
 
         <TestButton
           {...results["getActivePublicKey"]}
           name="getActivePublicKey()"
           onClick={handleGetActivePublicKey}
+          disabled={!("getActivePublicKey" in arweaveWallet)}
         />
 
         <TestButton
           {...results["getAllAddresses"]}
           name="getAllAddresses()"
           onClick={handleGetAllAddresses}
+          disabled={!("getAllAddresses" in arweaveWallet)}
         />
 
         <TestButton
           {...results["getWalletNames"]}
           name="getWalletNames()"
           onClick={handleGetWalletNames}
+          disabled={!("getWalletNames" in arweaveWallet)}
         />
 
         <TestButton
           {...results["getUserDetails"]}
           name="getUserDetails()"
           onClick={handleGetUserDetails}
+          disabled={!("getUserDetails" in arweaveWallet)}
         />
       </div>
 
       <div className="block testButtons__grid">
-        <TestButton {...results["sign"]} name="sign()" onClick={handleSign}>
+        <TestButton
+          {...results["sign"]}
+          name="sign()"
+          onClick={handleSign}
+          disabled={!("sign" in arweaveWallet)}
+        >
           <SelectField
             name="signType"
             label="Content-Type"
@@ -847,6 +960,7 @@ function App() {
           {...results["dispatch"]}
           name="dispatch()"
           onClick={handleDispatch}
+          disabled={!("dispatch" in arweaveWallet)}
         >
           <SelectField
             name="dispatchType"
@@ -884,6 +998,7 @@ function App() {
           {...results["encrypt"]}
           name="encrypt()"
           onClick={handleEncrypt}
+          disabled={!("encrypt" in arweaveWallet)}
         >
           <TextField
             name="encryptPlaintext"
@@ -907,6 +1022,7 @@ function App() {
           {...results["decrypt"]}
           name="decrypt()"
           onClick={handleDecrypt}
+          disabled={!("decrypt" in arweaveWallet)}
         >
           <TextField
             name="decryptCiphertext"
@@ -938,6 +1054,7 @@ function App() {
           {...results["signature"]}
           name="signature()"
           onClick={handleSignature}
+          disabled={!("signature" in arweaveWallet)}
         >
           <TextField
             name="signatureData"
@@ -961,6 +1078,7 @@ function App() {
           {...results["signDataItem"]}
           name="signDataItem()"
           onClick={handleSignDataItem}
+          disabled={!("signDataItem" in arweaveWallet)}
         >
           <TextField
             name="signDataItemData"
@@ -984,6 +1102,7 @@ function App() {
           {...results["batchSignDataItem"]}
           name="batchSignDataItem()"
           onClick={handleBatchSignDataItem}
+          disabled={!("batchSignDataItem" in arweaveWallet)}
         >
           <TextField
             name="batchSignDataItemData"
@@ -1007,6 +1126,7 @@ function App() {
           {...results["signMessage"]}
           name="signMessage()"
           onClick={handleSignMessage}
+          disabled={!("signMessage" in arweaveWallet)}
         >
           <TextField
             name="signMessageData"
@@ -1030,6 +1150,7 @@ function App() {
           {...results["verifyMessage"]}
           name="verifyMessage()"
           onClick={handleVerifyMessage}
+          disabled={!("verifyMessage" in arweaveWallet)}
         >
           <TextField
             name="verifyMessageData"
@@ -1059,6 +1180,7 @@ function App() {
           {...results["privateHash"]}
           name="privateHash()"
           onClick={handlePrivateHash}
+          disabled={!("privateHash" in arweaveWallet)}
         >
           <TextField
             name="privateHashData"
@@ -1084,36 +1206,42 @@ function App() {
           {...results["walletName"]}
           name="walletName"
           onClick={handleWalletName}
+          disabled={!("walletName" in arweaveWallet)}
         />
 
         <TestButton
           {...results["walletVersion"]}
           name="walletVersion"
           onClick={handleWalletVersion}
+          disabled={!("walletVersion" in arweaveWallet)}
         />
 
         <TestButton
           {...results["config"]}
           name="config"
           onClick={handleConfig}
+          disabled={!("config" in arweaveWallet)}
         />
 
         <TestButton
           {...results["appInfo"]}
           name="appInfo"
           onClick={handleAppInfo}
+          disabled={!("appInfo" in arweaveWallet)}
         />
 
         <TestButton
           {...results["getArweaveConfig"]}
           name="getArweaveConfig()"
           onClick={handleGetArweaveConfig}
+          disabled={!("getArweaveConfig" in arweaveWallet)}
         />
 
         <TestButton
           {...results["getPermissions"]}
           name="getPermissions()"
           onClick={handleGetPermissions}
+          disabled={!("getPermissions" in arweaveWallet)}
         />
       </div>
 
@@ -1122,11 +1250,16 @@ function App() {
           {...results["__getServerInfo"]}
           name="__getServerInfo()"
           onClick={handleGetServerInfo}
+          disabled={!("__getServerInfo" in arweaveWallet)}
         />
       </div>
 
       {sortedResults.length > 0 ? (
-        <ol className="block logItems__grid">
+        <ol
+          ref={logItemsElementRef}
+          className={`block logItems__base ${logPosition === "sticky" ? "logItem--sticky" : ""}`}
+          onScroll={handleLogScroll}
+        >
           {sortedResults.map((result) => (
             <LogItem key={result.name} {...result} />
           ))}
@@ -1134,6 +1267,38 @@ function App() {
       ) : null}
 
       <footer className="block footer__base">
+        <div
+          className={`footer__actionsWrapper ${logPosition === "static" ? "footer--withGradient" : ""}`}
+        >
+          <div className="footer__actions">
+            <button className="footer__action" onClick={handleSwitchWallet}>
+              <img
+                className="footer__actionImg"
+                src={`./wallet-icons/${arweaveWallet.walletName}.png`}
+                alt={`${arweaveWallet.walletName} Icon`}
+              />
+            </button>
+            <button className="footer__action" onClick={handleSettings}>
+              <span className="footer__actionText">⚙️</span>
+            </button>
+          </div>
+
+          <div className="footer__actions">
+            <button
+              className="footer__action"
+              onClick={handleToggleLogPosition}
+              disabled={sortedResults.length === 0}
+            >
+              <span className="footer__actionText">
+                {logPosition === "static" ? "⬆️" : "⬇️"}
+              </span>
+            </button>
+            <button className="footer__action" onClick={handleTestAll}>
+              <span className="footer__actionText">🧙‍♂️</span>
+            </button>
+          </div>
+        </div>
+
         <a target="_blank" rel="noreferrer noopener" href="https://othent.io/">
           othent.io
         </a>
