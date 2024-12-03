@@ -43,7 +43,7 @@ export function LogItem({
   };
 
   return (
-    <li className={rootClassName}>
+    <li className={rootClassName} id={`${name}LogItem`}>
       <div className="logItem__header">
         <span className="logItem__indicator" style={{ color }}>
           ●

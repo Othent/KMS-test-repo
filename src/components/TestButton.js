@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export function TestButton({ name, status, elapsed, onClick, children }) {
+export function TestButton({
+  name,
+  status,
+  elapsed,
+  onClick,
+  disabled,
+  children,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [disabled]);
 
   let rootClassName = "testButton__base";
 
@@ -24,7 +35,11 @@ export function TestButton({ name, status, elapsed, onClick, children }) {
   return (
     <div className={rootClassName}>
       <div className="testButton__buttonWrapper">
-        <button className={buttonClassName} onClick={onClick}>
+        <button
+          className={buttonClassName}
+          onClick={onClick}
+          disabled={disabled}
+        >
           <span className="testButton__indicator" style={{ color }}>
             ●
           </span>
@@ -44,8 +59,9 @@ export function TestButton({ name, status, elapsed, onClick, children }) {
         {!!children ? (
           <button
             className="testButton__expandButton"
-            title={ `${ isExpanded ? 'Open' : 'Close' } function's inputs and outputs` }
+            title={`${isExpanded ? "Open" : "Close"} function's inputs and outputs`}
             onClick={() => setIsExpanded((v) => !v)}
+            disabled={disabled}
           >
             {isExpanded ? "×" : "+"}
           </button>
