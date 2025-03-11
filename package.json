@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@othent/kms": "^2.1.1",
+    "@wanderapp/embed-sdk": "^0.0.1",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "react": "^18.3.1",
@@ -20,8 +21,7 @@
     "lint-staged": "^15.2.9",
     "prettier": "^3.3.3",
     "react-scripts": "5.0.1",
-    "typescript": "^4.9.5",
-    "wander-embedded-sdk": "link:./../wander/Wander/wander-embedded-sdk/"
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -33,7 +33,9 @@
     "prettier": "prettier --write .",
     "prepare": "husky",
     "link-othent": "pnpm add ../KeyManagementService/ && pnpm link ../KeyManagementService/",
-    "install-othent": "pnpm add @othent/kms@latest"
+    "install-othent": "pnpm add @othent/kms@latest",
+    "link-embed": "pnpm add ../wander/Wander/wander-embedded-sdk/ && pnpm link ../wander/Wander/wander-embedded-sdk/",
+    "install-embed": "pnpm add @wanderapp/embed-sdk@latest"
   },
   "eslintConfig": {
     "extends": [
