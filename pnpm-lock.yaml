@@ -53,6 +53,9 @@ importers:
       typescript:
         specifier: ^4.9.5
         version: 4.9.5
+      wander-embedded-sdk:
+        specifier: link:./../wander/Wander/wander-embedded-sdk/
+        version: link:../wander/Wander/wander-embedded-sdk
 
 packages:
   "@adobe/css-tools@4.4.0":
