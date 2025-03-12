@@ -235,11 +235,12 @@ function App() {
         clientId: "ALPHA",
       });
 
+      // After `WanderEmbedded` is instantiated, `window.arweaveWallet` is set/updated with its own API,
+      // so we just need to grab a reference to it:
       wallet = window.arweaveWallet;
 
-      wanderInstance.open();
-
-      // setInstance(wanderInstance);
+      // For easier development / testing of WanderEmbedded-specific features (e.g. theming) from the Console:
+      window.wanderInstance = wanderInstance;
     } else if (walletType === "Othent KMS") {
       wallet = new Othent({
         debug: true,
