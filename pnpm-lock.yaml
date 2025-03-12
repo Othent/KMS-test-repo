@@ -11,8 +11,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1(arweave@1.15.1)(axios@1.7.7)(warp-arbundles@1.0.4)
       "@wanderapp/embed-sdk":
-        specifier: link:../wander/Wander/wander-embedded-sdk
-        version: link:../wander/Wander/wander-embedded-sdk
+        specifier: ^0.0.1
+        version: 0.0.1
       arweave:
         specifier: ^1.15.1
         version: 1.15.1
@@ -2383,6 +2383,12 @@ packages:
     resolution:
       {
         integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==,
+      }
+
+  "@wanderapp/embed-sdk@0.0.1":
+    resolution:
+      {
+        integrity: sha512-jUrEHaEdhAZxXJ/PGN5FHuZoYRJ7frITdtpJiDb2wmQDw7U9k5z9NvimIetUzcWnBsq4g7zTOQiAAGco3j5KgA==,
       }
 
   "@webassemblyjs/ast@1.12.1":
@@ -9441,6 +9447,13 @@ packages:
         integrity: sha512-c3zayb8/kWWpycWYg87P71E1S1ZL6b6IJxfb5fvsUgsf0S2MVGaDhDXXjDMpdCpfWXqptc+4mXwmiy1ypXqRAA==,
       }
 
+  ts-deepmerge@7.0.2:
+    resolution:
+      {
+        integrity: sha512-akcpDTPuez4xzULo5NwuoKwYRtjQJ9eoNfBACiBMaXwNAx7B1PKfe5wqUFJuW5uKzQ68YjDFwPaWHDG1KnFGsA==,
+      }
+    engines: { node: ">=14.13.1" }
+
   ts-interface-checker@0.1.13:
     resolution:
       {
@@ -12054,6 +12067,10 @@ snapshots:
       eslint-visitor-keys: 3.4.3
 
   "@ungap/structured-clone@1.2.0": {}
+
+  "@wanderapp/embed-sdk@0.0.1":
+    dependencies:
+      ts-deepmerge: 7.0.2
 
   "@webassemblyjs/ast@1.12.1":
     dependencies:
@@ -16935,6 +16952,8 @@ snapshots:
       punycode: 2.3.1
 
   tryer@1.0.1: {}
+
+  ts-deepmerge@7.0.2: {}
 
   ts-interface-checker@0.1.13: {}
 
