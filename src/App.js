@@ -13,7 +13,7 @@ import { UserCard } from "./components/UserCard";
 import { SelectField } from "./components/SelectField";
 import { LogItem } from "./components/LogItem";
 import { replacer } from "./utils/replacer";
-import { WanderEmbedded } from "wander-embedded-sdk";
+import { WanderEmbedded } from "@wanderapp/embed-sdk";
 
 import "./App.css";
 

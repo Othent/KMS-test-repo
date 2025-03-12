@@ -5,7 +5,7 @@
   "private": true,
   "dependencies": {
     "@othent/kms": "^2.1.1",
-    "@wanderapp/embed-sdk": "^0.0.1",
+    "@wanderapp/embed-sdk": "link:../wander/Wander/wander-embedded-sdk",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "react": "^18.3.1",
