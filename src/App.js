@@ -459,10 +459,10 @@ function App() {
   const handleConnect = getHandler(
     async () => {
       const result = await wallet.connect(
-        wallet.walletName === "ArConnect" ? ALL_PERMISSIONS : undefined,
+        wallet.walletName === "Othent KMS" ? undefined : ALL_PERMISSIONS,
       );
 
-      if (wallet.walletName === "ArConnect") {
+      if (wallet.walletName !== "Othent KMS") {
         const walletAddress = await wallet.getActiveAddress();
         const walletNames = await wallet.getWalletNames();
 
@@ -475,6 +475,10 @@ function App() {
           },
           isAuthenticated: true,
         });
+
+        const permissions = await wallet.getPermissions();
+
+        return { isValid: !!permissions };
       }
 
       return { result };
