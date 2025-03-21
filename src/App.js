@@ -233,6 +233,9 @@ function App() {
     } else if (walletType === "Wander Embedded") {
       const wanderInstance = new WanderEmbedded({
         clientId: "ALPHA",
+        button: {
+          position: "bottom-left",
+        },
       });
 
       // After `WanderEmbedded` is instantiated, `window.arweaveWallet` is set/updated with its own API,
@@ -263,14 +266,18 @@ function App() {
       });
     }
 
-    if (wallet?.walletName !== walletType) {
+    let actualWalletName = wallet?.walletName;
+
+    if (actualWalletName !== walletType) {
       wallet = null;
     }
 
     setWallet(wallet);
 
     if (!wallet) {
-      console.warn(`Could not initialize ${walletType} wallet.`);
+      console.warn(
+        `Could not initialize ${walletType} wallet (got ${actualWalletName}).`,
+      );
 
       return;
     }
@@ -299,10 +306,11 @@ function App() {
 
   useEffect(() => {
     let wallet = initWallet();
+    let intervalID = 0;
     let initializationAttempts = 0;
 
     if (!wallet) {
-      const intervalID = setInterval(() => {
+      intervalID = setInterval(() => {
         wallet = initWallet();
 
         if (wallet || ++initializationAttempts >= 16) {
@@ -314,7 +322,17 @@ function App() {
         }
       }, 250);
     }
-  }, [initWallet]);
+
+    return () => {
+      clearInterval(intervalID);
+
+      if (window.wanderInstance) {
+        window.wanderInstance.destroy();
+
+        delete window.wanderInstance;
+      }
+    };
+  }, [initWallet, walletType]);
 
   // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
   // project in DEV mode with hot reloading.
