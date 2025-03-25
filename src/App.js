@@ -233,6 +233,8 @@ function App() {
     } else if (walletType === "Wander Embedded") {
       const wanderInstance = new WanderEmbedded({
         clientId: "ALPHA",
+        baseURL: "https://embed-dev.wander.app",
+        baseServerURL: "https://embed-api-dev.wander.app",
         button: {
           position: "bottom-left",
         },
