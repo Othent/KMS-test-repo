@@ -13,6 +13,7 @@ import { UserCard } from "./components/UserCard";
 import { SelectField } from "./components/SelectField";
 import { LogItem } from "./components/LogItem";
 import { replacer } from "./utils/replacer";
+import { WanderEmbedded } from "@wanderapp/embed-sdk";
 
 import "./App.css";
 
@@ -39,6 +40,7 @@ const DEFAULT_TX_DATA_TYPE = "text/html";
 const DEFAULT_SECRET = "This is a very secret message... 🤫";
 const DEFAULT_DATA_FOR_SIGNING = "This data needs to be signed... ✅";
 const DEFAULT_DATA_FOR_HASHING = "This data needs to be hashed... 🗜️";
+
 const ALL_PERMISSIONS = [
   "ACCESS_ADDRESS",
   "ACCESS_ALL_ADDRESSES",
@@ -50,6 +52,8 @@ const ALL_PERMISSIONS = [
   "SIGN_TRANSACTION",
   "SIGNATURE",
 ];
+
+const WALLET_TYPES = ["ArConnect", "Wander Embedded", "Othent KMS"];
 
 function App() {
   // Inputs:
@@ -95,7 +99,7 @@ function App() {
     // Playground:
     useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
-    walletType: "injected",
+    walletType: WALLET_TYPES[0],
     logPosition: "sticky",
 
     // Othent:
@@ -112,11 +116,16 @@ function App() {
   const handleSwitchWallet = useCallback(() => {
     setAuthState({});
     setResults({});
-    setSettings((prevSettings) => ({
-      ...prevSettings,
-      walletType:
-        prevSettings.walletType === "injected" ? "othent" : "injected",
-    }));
+    setSettings((prevSettings) => {
+      const walletTypeIndex = WALLET_TYPES.indexOf(prevSettings.walletType);
+      const walletType =
+        WALLET_TYPES[(walletTypeIndex + 1) % WALLET_TYPES.length];
+
+      return {
+        ...prevSettings,
+        walletType,
+      };
+    });
   }, []);
 
   const handleToggleLogPosition = useCallback(() => {
@@ -214,11 +223,31 @@ function App() {
     return useStrings ? dataStr : new TextEncoder().encode(dataStr);
   };
 
-  const arweaveWallet = useMemo(() => {
-    let nextArweaveWallet = window.arweaveWallet;
+  const [wallet, setWallet] = useState(window.arweaveWallet || null);
 
-    if (walletType === "othent") {
-      nextArweaveWallet = new Othent({
+  const initWallet = useCallback(() => {
+    let wallet = null;
+
+    if (walletType === "ArConnect") {
+      wallet = window.arweaveWallet;
+    } else if (walletType === "Wander Embedded") {
+      const wanderInstance = new WanderEmbedded({
+        clientId: "ALPHA",
+        baseURL: "https://embed-dev.wander.app",
+        baseServerURL: "https://embed-api-dev.wander.app",
+        button: {
+          position: "bottom-left",
+        },
+      });
+
+      // After `WanderEmbedded` is instantiated, `window.arweaveWallet` is set/updated with its own API,
+      // so we just need to grab a reference to it:
+      wallet = window.arweaveWallet;
+
+      // For easier development / testing of WanderEmbedded-specific features (e.g. theming) from the Console:
+      window.wanderInstance = wanderInstance;
+    } else if (walletType === "Othent KMS") {
+      wallet = new Othent({
         debug: true,
         serverBaseURL,
         auth0Strategy,
@@ -239,22 +268,33 @@ function App() {
       });
     }
 
-    if (!nextArweaveWallet) {
-      throw new Error(`Could not initialize ${walletType} wallet.`);
+    let actualWalletName = wallet?.walletName;
+
+    if (actualWalletName !== walletType) {
+      wallet = null;
     }
 
-    console.group(
-      `${nextArweaveWallet.walletName} @ ${nextArweaveWallet.walletVersion}`,
-    );
+    setWallet(wallet);
 
-    Object.entries(nextArweaveWallet?.config || {}).forEach(([key, value]) => {
+    if (!wallet) {
+      console.warn(
+        `Could not initialize ${walletType} wallet (got ${actualWalletName}).`,
+      );
+
+      return;
+    }
+
+    console.group(`${wallet.walletName} @ ${wallet.walletVersion}`);
+
+    Object.entries(wallet?.config || {}).forEach(([key, value]) => {
       console.log(` ${key.padStart(29)} = ${value}`);
     });
 
     console.groupEnd();
 
-    return nextArweaveWallet;
+    return wallet;
   }, [
+    setWallet,
     walletType,
     serverBaseURL,
     auth0Strategy,
@@ -266,19 +306,49 @@ function App() {
     persistLocalStorage,
   ]);
 
+  useEffect(() => {
+    let wallet = initWallet();
+    let intervalID = 0;
+    let initializationAttempts = 0;
+
+    if (!wallet) {
+      intervalID = setInterval(() => {
+        wallet = initWallet();
+
+        if (wallet || ++initializationAttempts >= 16) {
+          clearInterval(intervalID);
+
+          if (!wallet) {
+            console.error("Could not initialize wallet");
+          }
+        }
+      }, 250);
+    }
+
+    return () => {
+      clearInterval(intervalID);
+
+      if (window.wanderInstance) {
+        window.wanderInstance.destroy();
+
+        delete window.wanderInstance;
+      }
+    };
+  }, [initWallet, walletType]);
+
   // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
   // project in DEV mode with hot reloading.
 
   const hasLoggedInRef = useRef(false);
 
   useEffect(() => {
-    if (arweaveWallet.walletName !== "Othent KMS") return;
+    if (!wallet || wallet.walletName !== "Othent KMS") return;
 
-    const cleanupFn = arweaveWallet.startTabSynching();
+    const cleanupFn = wallet.startTabSynching();
 
-    if (arweaveWallet.config.auth0LogInMethod === "redirect") {
+    if (wallet.config.auth0LogInMethod === "redirect") {
       // This is not needed (NOOP) unless auth0LogInMethod = "redirect":
-      arweaveWallet.completeConnectionAfterRedirect();
+      wallet.completeConnectionAfterRedirect();
     }
 
     if (!hasLoggedInRef.current) return;
@@ -291,7 +361,7 @@ function App() {
       try {
         // This won't work if `auth0Strategy = "refresh-memory"`.
 
-        await arweaveWallet.connect();
+        await wallet.connect();
       } catch (err) {
         console.log("connect() error:", err);
       }
@@ -304,7 +374,7 @@ function App() {
     return cleanupFn;
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [arweaveWallet]);
+  }, [wallet]);
 
   // We need to use `useCallback` here as React will call the `useEffect` below twice in development mode, and we don't
   // want to add duplicate event listeners. However, if we define the listener function inside `useEffect`, two
@@ -324,9 +394,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (arweaveWallet.walletName !== "Othent KMS") return;
+    if (!wallet || wallet.walletName !== "Othent KMS") return;
 
-    const removeAuthEventListener = arweaveWallet.addEventListener(
+    const removeAuthEventListener = wallet.addEventListener(
       "auth",
       handleAuthChange,
     );
@@ -335,7 +405,7 @@ function App() {
       ? () => {
           /* NOOP */
         }
-      : arweaveWallet.addEventListener("error", handleError);
+      : wallet.addEventListener("error", handleError);
 
     return () => {
       removeAuthEventListener();
@@ -343,13 +413,13 @@ function App() {
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [arweaveWallet, throwErrors]);
+  }, [wallet, throwErrors]);
 
   function getHandler(fn, options) {
     const { name } = options;
 
     return async () => {
-      if (!(name in arweaveWallet)) return;
+      if (!(name in wallet)) return;
 
       setResults((prevResults) => ({
         ...prevResults,
@@ -408,13 +478,13 @@ function App() {
 
   const handleConnect = getHandler(
     async () => {
-      const result = await arweaveWallet.connect(
-        arweaveWallet.walletName === "ArConnect" ? ALL_PERMISSIONS : undefined,
+      const result = await wallet.connect(
+        wallet.walletName === "Othent KMS" ? undefined : ALL_PERMISSIONS,
       );
 
-      if (arweaveWallet.walletName === "ArConnect") {
-        const walletAddress = await arweaveWallet.getActiveAddress();
-        const walletNames = await arweaveWallet.getWalletNames();
+      if (wallet.walletName !== "Othent KMS") {
+        const walletAddress = await wallet.getActiveAddress();
+        const walletNames = await wallet.getWalletNames();
 
         setAuthState({
           userDetails: {
@@ -425,6 +495,10 @@ function App() {
           },
           isAuthenticated: true,
         });
+
+        const permissions = await wallet.getPermissions();
+
+        return { isValid: !!permissions };
       }
 
       return { result };
@@ -434,9 +508,9 @@ function App() {
 
   const handleDisconnect = getHandler(
     async () => {
-      const result = await arweaveWallet.disconnect();
+      const result = await wallet.disconnect();
 
-      if (arweaveWallet.walletName === "ArConnect") {
+      if (wallet.walletName === "ArConnect") {
         setAuthState({});
       }
 
@@ -447,7 +521,7 @@ function App() {
 
   const handleRequireAuth = getHandler(
     async () => {
-      const result = await arweaveWallet.requireAuth();
+      const result = await wallet.requireAuth();
 
       return { result, isValid: true };
     },
@@ -456,7 +530,7 @@ function App() {
 
   const handleIsAuthenticated = getHandler(
     async () => {
-      const result = arweaveWallet.isAuthenticated;
+      const result = wallet.isAuthenticated;
 
       return { result, isValid: typeof result === "boolean" };
     },
@@ -467,7 +541,7 @@ function App() {
 
   const handleGetActiveAddress = getHandler(
     async () => {
-      const result = await arweaveWallet.getActiveAddress();
+      const result = await wallet.getActiveAddress();
       return { result };
     },
     { name: "getActiveAddress" },
@@ -475,7 +549,7 @@ function App() {
 
   const handleGetActivePublicKey = getHandler(
     async () => {
-      const result = await arweaveWallet.getActivePublicKey();
+      const result = await wallet.getActivePublicKey();
       return { result };
     },
     { name: "getActivePublicKey" },
@@ -483,7 +557,7 @@ function App() {
 
   const handleGetAllAddresses = getHandler(
     async () => {
-      const result = await arweaveWallet.getAllAddresses();
+      const result = await wallet.getAllAddresses();
       return { result };
     },
     { name: "getAllAddresses" },
@@ -491,7 +565,7 @@ function App() {
 
   const handleGetWalletNames = getHandler(
     async () => {
-      const result = await arweaveWallet.getWalletNames();
+      const result = await wallet.getWalletNames();
       return { result };
     },
     { name: "getWalletNames" },
@@ -499,7 +573,7 @@ function App() {
 
   const handleGetUserDetails = getHandler(
     async () => {
-      const result = await arweaveWallet.getUserDetails();
+      const result = await wallet.getUserDetails();
       return { result };
     },
     { name: "getUserDetails" },
@@ -518,7 +592,7 @@ function App() {
         inputsRef.current.signType?.value || DEFAULT_TX_DATA_TYPE,
       );
 
-      const signedTransaction = await arweaveWallet.sign(transaction);
+      const signedTransaction = await wallet.sign(transaction);
 
       let postResult = null;
 
@@ -528,7 +602,7 @@ function App() {
 
       const isValid =
         (await arweave.transactions.verify(signedTransaction)) &&
-        (arweaveWallet.walletVersion.startsWith("1.") ||
+        (wallet.walletVersion.startsWith("1.") ||
           transaction !== signedTransaction);
 
       return {
@@ -553,7 +627,7 @@ function App() {
         inputsRef.current.dispatchType?.value || DEFAULT_TX_DATA_TYPE,
       );
 
-      const result = await arweaveWallet.dispatch(transaction);
+      const result = await wallet.dispatch(transaction);
       const transactionURL = `https://viewblock.io/arweave/tx/${result.id}`;
 
       return { result, isValid: !!result, transactionURL };
@@ -568,7 +642,7 @@ function App() {
       const dataStr =
         inputsRef.current.encryptPlaintext?.value || DEFAULT_SECRET;
       const plaintext = normalizeInput(dataStr);
-      const result = await arweaveWallet.encrypt(plaintext, {
+      const result = await wallet.encrypt(plaintext, {
         name: "RSA-OAEP",
       });
 
@@ -586,7 +660,7 @@ function App() {
       const b64Ciphertext = inputsRef.current.decryptCiphertext?.value || "";
       const encryptedData = b64Ciphertext
         ? b64ToUint8Array(b64Ciphertext)
-        : await arweaveWallet.encrypt(plaintext, { name: "RSA-OAEP" });
+        : await wallet.encrypt(plaintext, { name: "RSA-OAEP" });
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
       // (not a regular one) `string` directly:
@@ -594,7 +668,7 @@ function App() {
       //   ? uint8ArrayTob64Url(encryptReturn)
       //   : encryptReturn;
 
-      const result = await arweaveWallet.decrypt(encryptedData, {
+      const result = await wallet.decrypt(encryptedData, {
         name: "RSA-OAEP",
       });
       const resultString = binaryDataTypeToString(result);
@@ -614,14 +688,14 @@ function App() {
       const dataStr =
         inputsRef.current.signatureData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
-      const result = await arweaveWallet.signature(data, {
+      const result = await wallet.signature(data, {
         name: "RSA-PSS",
         saltLength: 32,
       });
 
       // This won't work.
       // TODO: Do we need to "re-implement" most of `verifyMessage()` in userland to verify?
-      // const isValid = await arweaveWallet.verifyMessage(dataToSign, result);
+      // const isValid = await wallet.verifyMessage(dataToSign, result);
 
       return { result, isValid: !!result, input: data };
     },
@@ -632,7 +706,7 @@ function App() {
     async () => {
       const dataStr =
         inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING;
-      const result = await arweaveWallet.signDataItem({ data: dataStr });
+      const result = await wallet.signDataItem({ data: dataStr });
       const dataItem = new DataItem(Buffer.from(result));
 
       // TODO: Not working:
@@ -653,7 +727,7 @@ function App() {
       const dataStr2 = `${inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING} (2/3)`;
       const dataStr3 = `${inputsRef.current.signDataItemData?.value || DEFAULT_DATA_FOR_SIGNING} (3/3)`;
 
-      const result = await arweaveWallet.batchSignDataItem([
+      const result = await wallet.batchSignDataItem([
         { data: dataStr1 },
         { data: dataStr2 },
         { data: dataStr3 },
@@ -691,7 +765,7 @@ function App() {
       const dataStr =
         inputsRef.current.signMessageData?.value || DEFAULT_DATA_FOR_SIGNING;
       const data = normalizeInput(dataStr);
-      const result = await arweaveWallet.signMessage(data);
+      const result = await wallet.signMessage(data);
 
       return { result, isValid: !!result, input: data };
     },
@@ -708,9 +782,9 @@ function App() {
         inputsRef.current.verifyMessageSignature?.value || "";
       const signedData = b64Signature
         ? b64ToUint8Array(b64Signature)
-        : await arweaveWallet.signMessage(data);
+        : await wallet.signMessage(data);
 
-      const result = await arweaveWallet.verifyMessage(data, signedData);
+      const result = await wallet.verifyMessage(data, signedData);
 
       return { result, isValid: result, input: [data, signedData] };
     },
@@ -722,7 +796,7 @@ function App() {
       const dataStr =
         inputsRef.current.privateHashData?.value || DEFAULT_DATA_FOR_HASHING;
       const data = normalizeInput(dataStr);
-      const result = await arweaveWallet.privateHash(data, {
+      const result = await wallet.privateHash(data, {
         hashAlgorithm: "SHA-256",
       });
 
@@ -735,7 +809,7 @@ function App() {
 
   const handleWalletName = getHandler(
     async () => {
-      const result = arweaveWallet.walletName;
+      const result = wallet.walletName;
 
       return { result };
     },
@@ -744,7 +818,7 @@ function App() {
 
   const handleWalletVersion = getHandler(
     async () => {
-      const result = arweaveWallet.walletVersion;
+      const result = wallet.walletVersion;
 
       return { result };
     },
@@ -753,7 +827,7 @@ function App() {
 
   const handleConfig = getHandler(
     async () => {
-      const result = arweaveWallet.config;
+      const result = wallet.config;
 
       return { result };
     },
@@ -762,7 +836,7 @@ function App() {
 
   const handleAppInfo = getHandler(
     async () => {
-      const result = await arweaveWallet.appInfo;
+      const result = await wallet.appInfo;
 
       return { result };
     },
@@ -771,7 +845,7 @@ function App() {
 
   const handleGetArweaveConfig = getHandler(
     async () => {
-      const result = await arweaveWallet.getArweaveConfig();
+      const result = await wallet.getArweaveConfig();
 
       return { result };
     },
@@ -780,7 +854,7 @@ function App() {
 
   const handleGetPermissions = getHandler(
     async () => {
-      const result = await arweaveWallet.getPermissions();
+      const result = await wallet.getPermissions();
 
       return { result };
     },
@@ -789,7 +863,7 @@ function App() {
 
   const handleGetServerInfo = getHandler(
     async () => {
-      const result = await arweaveWallet.__getServerInfo();
+      const result = await wallet.__getServerInfo();
 
       return { result };
     },
@@ -860,28 +934,28 @@ function App() {
           {...results["connect"]}
           name="connect()"
           onClick={handleConnect}
-          disabled={!("connect" in arweaveWallet)}
+          disabled={!wallet || !("connect" in wallet)}
         />
 
         <TestButton
           {...results["disconnect"]}
           name="disconnect()"
           onClick={handleDisconnect}
-          disabled={!("disconnect" in arweaveWallet)}
+          disabled={!wallet || !("disconnect" in wallet)}
         />
 
         <TestButton
           {...results["requireAuth"]}
           name="requireAuth()"
           onClick={handleRequireAuth}
-          disabled={!("requireAuth" in arweaveWallet)}
+          disabled={!wallet || !("requireAuth" in wallet)}
         />
 
         <TestButton
           {...results["isAuthenticated"]}
           name="isAuthenticated"
           onClick={handleIsAuthenticated}
-          disabled={!("isAuthenticated" in arweaveWallet)}
+          disabled={!wallet || !("isAuthenticated" in wallet)}
         />
       </div>
 
@@ -890,35 +964,35 @@ function App() {
           {...results["getActiveAddress"]}
           name="getActiveAddress()"
           onClick={handleGetActiveAddress}
-          disabled={!("getActiveAddress" in arweaveWallet)}
+          disabled={!wallet || !("getActiveAddress" in wallet)}
         />
 
         <TestButton
           {...results["getActivePublicKey"]}
           name="getActivePublicKey()"
           onClick={handleGetActivePublicKey}
-          disabled={!("getActivePublicKey" in arweaveWallet)}
+          disabled={!wallet || !("getActivePublicKey" in wallet)}
         />
 
         <TestButton
           {...results["getAllAddresses"]}
           name="getAllAddresses()"
           onClick={handleGetAllAddresses}
-          disabled={!("getAllAddresses" in arweaveWallet)}
+          disabled={!wallet || !("getAllAddresses" in wallet)}
         />
 
         <TestButton
           {...results["getWalletNames"]}
           name="getWalletNames()"
           onClick={handleGetWalletNames}
-          disabled={!("getWalletNames" in arweaveWallet)}
+          disabled={!wallet || !("getWalletNames" in wallet)}
         />
 
         <TestButton
           {...results["getUserDetails"]}
           name="getUserDetails()"
           onClick={handleGetUserDetails}
-          disabled={!("getUserDetails" in arweaveWallet)}
+          disabled={!wallet || !("getUserDetails" in wallet)}
         />
       </div>
 
@@ -927,7 +1001,7 @@ function App() {
           {...results["sign"]}
           name="sign()"
           onClick={handleSign}
-          disabled={!("sign" in arweaveWallet)}
+          disabled={!wallet || !("sign" in wallet)}
         >
           <SelectField
             name="signType"
@@ -963,7 +1037,7 @@ function App() {
           {...results["dispatch"]}
           name="dispatch()"
           onClick={handleDispatch}
-          disabled={!("dispatch" in arweaveWallet)}
+          disabled={!wallet || !("dispatch" in wallet)}
         >
           <SelectField
             name="dispatchType"
@@ -1001,7 +1075,7 @@ function App() {
           {...results["encrypt"]}
           name="encrypt()"
           onClick={handleEncrypt}
-          disabled={!("encrypt" in arweaveWallet)}
+          disabled={!wallet || !("encrypt" in wallet)}
         >
           <TextField
             name="encryptPlaintext"
@@ -1025,7 +1099,7 @@ function App() {
           {...results["decrypt"]}
           name="decrypt()"
           onClick={handleDecrypt}
-          disabled={!("decrypt" in arweaveWallet)}
+          disabled={!wallet || !("decrypt" in wallet)}
         >
           <TextField
             name="decryptCiphertext"
@@ -1057,7 +1131,7 @@ function App() {
           {...results["signature"]}
           name="signature()"
           onClick={handleSignature}
-          disabled={!("signature" in arweaveWallet)}
+          disabled={!wallet || !("signature" in wallet)}
         >
           <TextField
             name="signatureData"
@@ -1081,7 +1155,7 @@ function App() {
           {...results["signDataItem"]}
           name="signDataItem()"
           onClick={handleSignDataItem}
-          disabled={!("signDataItem" in arweaveWallet)}
+          disabled={!wallet || !("signDataItem" in wallet)}
         >
           <TextField
             name="signDataItemData"
@@ -1105,7 +1179,7 @@ function App() {
           {...results["batchSignDataItem"]}
           name="batchSignDataItem()"
           onClick={handleBatchSignDataItem}
-          disabled={!("batchSignDataItem" in arweaveWallet)}
+          disabled={!wallet || !("batchSignDataItem" in wallet)}
         >
           <TextField
             name="batchSignDataItemData"
@@ -1129,7 +1203,7 @@ function App() {
           {...results["signMessage"]}
           name="signMessage()"
           onClick={handleSignMessage}
-          disabled={!("signMessage" in arweaveWallet)}
+          disabled={!wallet || !("signMessage" in wallet)}
         >
           <TextField
             name="signMessageData"
@@ -1153,7 +1227,7 @@ function App() {
           {...results["verifyMessage"]}
           name="verifyMessage()"
           onClick={handleVerifyMessage}
-          disabled={!("verifyMessage" in arweaveWallet)}
+          disabled={!wallet || !("verifyMessage" in wallet)}
         >
           <TextField
             name="verifyMessageData"
@@ -1183,7 +1257,7 @@ function App() {
           {...results["privateHash"]}
           name="privateHash()"
           onClick={handlePrivateHash}
-          disabled={!("privateHash" in arweaveWallet)}
+          disabled={!wallet || !("privateHash" in wallet)}
         >
           <TextField
             name="privateHashData"
@@ -1209,42 +1283,42 @@ function App() {
           {...results["walletName"]}
           name="walletName"
           onClick={handleWalletName}
-          disabled={!("walletName" in arweaveWallet)}
+          disabled={!wallet || !("walletName" in wallet)}
         />
 
         <TestButton
           {...results["walletVersion"]}
           name="walletVersion"
           onClick={handleWalletVersion}
-          disabled={!("walletVersion" in arweaveWallet)}
+          disabled={!wallet || !("walletVersion" in wallet)}
         />
 
         <TestButton
           {...results["config"]}
           name="config"
           onClick={handleConfig}
-          disabled={!("config" in arweaveWallet)}
+          disabled={!wallet || !("config" in wallet)}
         />
 
         <TestButton
           {...results["appInfo"]}
           name="appInfo"
           onClick={handleAppInfo}
-          disabled={!("appInfo" in arweaveWallet)}
+          disabled={!wallet || !("appInfo" in wallet)}
         />
 
         <TestButton
           {...results["getArweaveConfig"]}
           name="getArweaveConfig()"
           onClick={handleGetArweaveConfig}
-          disabled={!("getArweaveConfig" in arweaveWallet)}
+          disabled={!wallet || !("getArweaveConfig" in wallet)}
         />
 
         <TestButton
           {...results["getPermissions"]}
           name="getPermissions()"
           onClick={handleGetPermissions}
-          disabled={!("getPermissions" in arweaveWallet)}
+          disabled={!wallet || !("getPermissions" in wallet)}
         />
       </div>
 
@@ -1253,7 +1327,7 @@ function App() {
           {...results["__getServerInfo"]}
           name="__getServerInfo()"
           onClick={handleGetServerInfo}
-          disabled={!("__getServerInfo" in arweaveWallet)}
+          disabled={!wallet || !("__getServerInfo" in wallet)}
         />
       </div>
 
@@ -1277,8 +1351,8 @@ function App() {
             <button className="footer__action" onClick={handleSwitchWallet}>
               <img
                 className="footer__actionImg"
-                src={`./wallet-icons/${arweaveWallet.walletName}.png`}
-                alt={`${arweaveWallet.walletName} Icon`}
+                src={`./wallet-icons/${walletType}.png`}
+                alt={`${walletType} Icon`}
               />
             </button>
             <button className="footer__action" onClick={handleSettings}>

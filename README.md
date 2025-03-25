@@ -20,20 +20,50 @@ Learn how to set it up at https://docs.othent.io or looking at our demo's code a
 
 ## Running it locally:
 
+### Wander Embedded
+
 ```
 pnpm install
 pnpm start
 ```
 
-To run it with a local `KeyManagementService` instance:
+To run it with a local `Wander` repo:
 
-1. Clone [`@othent/kms`](https://github.com/Othent/KeyManagementService) in the same directory where you cloned this
-   project.
+1.  Clone [`@wanderapp/embed-sdk`](https://github.com/wanderwallet/Wander) in a `wander` directory
+    that's inside the same directory where you cloned this project:
 
-2. Inside `@othent/kms` (`../KeyManagementService`), run `pnpm dev`.
+           /KMS-test-repo
+           /wander/Wander
 
-3. Inside this repo, run `pnpm link-othent` (`pnpm add ../KeyManagementService/ && pnpm link ../KeyManagementService/`). See [`pnpm link`](https://pnpm.io/cli/link).
+2.  Inside `/wander/Wander` run `yarn install` and `yarn build:wallet-api`.
 
-   You can later revert this with `pnpm install-othent` (`pnpm add @othent/kms@latest`).
+3.  Inside `/wander/Wander/wander-embedded-sdk`, run `pnpm install` and `pnpm dev`.
+
+4.  Inside this repo, run `pnpm link-embed`. See [`pnpm link`](https://pnpm.io/cli/link).
+
+    You can later revert this with `pnpm install-embed`.
+
+<br />
+
+### Othent
+
+```
+pnpm install
+pnpm start
+```
+
+To run it with a local `KeyManagementService` repo:
+
+1.  Clone [`@othent/kms`](https://github.com/Othent/KeyManagementService) in the same directory where
+    you cloned this project:
+
+           /KMS-test-repo
+           /KeyManagementService
+
+2.  Inside `@othent/kms` (`../KeyManagementService`), run `pnpm dev`.
+
+3.  Inside this repo, run `pnpm link-othent`. See [`pnpm link`](https://pnpm.io/cli/link).
+
+    You can later revert this with `pnpm install-othent`.
 
 <br />

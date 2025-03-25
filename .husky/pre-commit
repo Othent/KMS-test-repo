@@ -1,5 +1,5 @@
 pnpm lint-staged
 
-bash ./scripts/sync-version.sh
+bash ./sh-scripts/sync-version.sh
 
 git update-index --again
