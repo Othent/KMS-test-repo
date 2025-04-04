@@ -22,7 +22,7 @@
     "@othent/kms": "^2.1.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "@svgr/webpack": "^5.5.0",
-    "@wanderapp/embed-sdk": "^0.0.2",
+    "@wanderapp/embed-sdk": "link:../wander/Wander/wander-embedded-sdk",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "babel-jest": "^27.4.2",

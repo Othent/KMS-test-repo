@@ -233,8 +233,9 @@ function App() {
     } else if (walletType === "Wander Embedded") {
       const wanderInstance = new WanderEmbedded({
         clientId: "ALPHA",
-        baseURL: "https://embed-dev.wander.app",
-        baseServerURL: "https://embed-api-dev.wander.app",
+        base: "http://localhost:5173",
+        // baseURL: "https://embed-dev.wander.app",
+        // baseServerURL: "https://embed-api-dev.wander.app",
         button: {
           position: "bottom-left",
         },
@@ -394,7 +395,33 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!wallet || wallet.walletName !== "Othent KMS") return;
+    if (!wallet) return;
+
+    if (wallet.walletName !== "Othent KMS") {
+      wallet.events.on("connect", async () => {
+        const walletAddress = await wallet.getActiveAddress();
+        const walletNames = await wallet.getWalletNames();
+
+        handleAuthChange(
+          {
+            walletName: wallet.walletName,
+            name: walletNames[walletAddress],
+            email: "",
+            walletAddress,
+          },
+          true,
+        );
+      });
+
+      wallet.events.on("disconnect", () => {
+        handleAuthChange({}, false);
+      });
+
+      return () => {
+        wallet.events.off("connect");
+        wallet.events.off("disconnect");
+      };
+    }
 
     const removeAuthEventListener = wallet.addEventListener(
       "auth",
@@ -482,26 +509,9 @@ function App() {
         wallet.walletName === "Othent KMS" ? undefined : ALL_PERMISSIONS,
       );
 
-      if (wallet.walletName !== "Othent KMS") {
-        const walletAddress = await wallet.getActiveAddress();
-        const walletNames = await wallet.getWalletNames();
+      const permissions = await wallet.getPermissions();
 
-        setAuthState({
-          userDetails: {
-            name: walletNames[walletAddress],
-            email: "",
-            walletAddress,
-            authProvider: "ArConnect",
-          },
-          isAuthenticated: true,
-        });
-
-        const permissions = await wallet.getPermissions();
-
-        return { isValid: !!permissions };
-      }
-
-      return { result };
+      return { result, isValid: permissions.length === ALL_PERMISSIONS.length };
     },
     { name: "connect" },
   );
