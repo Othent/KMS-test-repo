@@ -509,26 +509,9 @@ function App() {
         wallet.walletName === "Othent KMS" ? undefined : ALL_PERMISSIONS,
       );
 
-      if (wallet.walletName !== "Othent KMS") {
-        const walletAddress = await wallet.getActiveAddress();
-        const walletNames = await wallet.getWalletNames();
+      const permissions = await wallet.getPermissions();
 
-        setAuthState({
-          userDetails: {
-            walletName: wallet.walletName,
-            name: walletNames[walletAddress],
-            email: "",
-            walletAddress,
-          },
-          isAuthenticated: true,
-        });
-
-        const permissions = await wallet.getPermissions();
-
-        return { result, isValid: !!permissions };
-      }
-
-      return { result };
+      return { result, isValid: permissions.length === ALL_PERMISSIONS.length };
     },
     { name: "connect" },
   );
