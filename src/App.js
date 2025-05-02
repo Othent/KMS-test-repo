@@ -5,7 +5,7 @@ import {
 } from "./utils/othent";
 import Arweave from "arweave";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { DataItem } from "warp-arbundles";
+import { DataItem } from "@dha-team/arbundles";
 import { TestButton } from "./components/TestButton";
 import { TextField } from "./components/TextField";
 import { LinkField } from "./components/LinkField";
@@ -225,6 +225,16 @@ function App() {
 
   const [wallet, setWallet] = useState(window.arweaveWallet || null);
 
+  let walletIcon = walletType;
+
+  if (walletType === "Wander Embedded" && wallet.walletName === "ArConnect") {
+    walletIcon = "Wander Connect Fallback to Wander BE";
+  }
+
+  const handleOnAuth = useCallback((...args) => {
+    setWallet(window.arweaveWallet);
+  }, []);
+
   const initWallet = useCallback(() => {
     let wallet = null;
 
@@ -233,12 +243,45 @@ function App() {
     } else if (walletType === "Wander Embedded") {
       const wanderInstance = new WanderEmbedded({
         clientId: "ALPHA",
+        theme: "dark",
         base: "http://localhost:5173",
         // baseURL: "https://embed-dev.wander.app",
         // baseServerURL: "https://embed-api-dev.wander.app",
+        iframe: {
+          routeLayout: {
+            type: "popup",
+            // fixedHeight: 600,
+          },
+
+          theme: "light",
+
+          /*
+          cssVars: {
+            light: {
+              boxShadow: "0 0 32px 8px blue",
+            },
+            dark: {
+              boxShadow: "0 0 32px 8px red",
+            },
+          }
+            */
+        },
         button: {
           position: "bottom-left",
+          theme: "light",
+
+          /*
+          cssVars: {
+            light: {
+              background: "blue",
+            },
+            dark: {
+              background: "red",
+            },
+          }
+          */
         },
+        onAuth: handleOnAuth,
       });
 
       // After `WanderEmbedded` is instantiated, `window.arweaveWallet` is set/updated with its own API,
@@ -272,7 +315,16 @@ function App() {
     let actualWalletName = wallet?.walletName;
 
     if (actualWalletName !== walletType) {
-      wallet = null;
+      if (
+        walletType === "Wander Embedded" &&
+        localStorage
+          .getItem("WANDER_CONNECT_AUTH_STATE")
+          .includes("NATIVE_WALLET")
+      ) {
+        console.warn("Wander Connect falling back to Wander BE.");
+      } else {
+        wallet = null;
+      }
     }
 
     setWallet(wallet);
@@ -297,6 +349,7 @@ function App() {
   }, [
     setWallet,
     walletType,
+    handleOnAuth,
     serverBaseURL,
     auth0Strategy,
     auth0Cache,
@@ -397,46 +450,123 @@ function App() {
   useEffect(() => {
     if (!wallet) return;
 
-    if (wallet.walletName !== "Othent KMS") {
-      wallet.events.on("connect", async () => {
-        const walletAddress = await wallet.getActiveAddress();
-        const walletNames = await wallet.getWalletNames();
+    handleAuthChange({}, false);
 
-        handleAuthChange(
-          {
-            walletName: wallet.walletName,
-            name: walletNames[walletAddress],
-            email: "",
-            walletAddress,
-          },
-          true,
-        );
-      });
+    if (wallet.walletName === "Othent KMS") {
+      const removeAuthEventListener = wallet.addEventListener(
+        "auth",
+        handleAuthChange,
+      );
 
-      wallet.events.on("disconnect", () => {
-        handleAuthChange({}, false);
-      });
+      const removeErrorEventListener = throwErrors
+        ? () => {
+            /* NOOP */
+          }
+        : wallet.addEventListener("error", handleError);
 
       return () => {
-        wallet.events.off("connect");
-        wallet.events.off("disconnect");
+        removeAuthEventListener();
+        removeErrorEventListener();
       };
     }
 
-    const removeAuthEventListener = wallet.addEventListener(
-      "auth",
-      handleAuthChange,
-    );
+    async function handleWalletLoaded(e) {
+      console.log("arweaveWalletLoaded EVENT", e);
 
-    const removeErrorEventListener = throwErrors
-      ? () => {
-          /* NOOP */
-        }
-      : wallet.addEventListener("error", handleError);
+      const { permissions = [] } = e.detail || {};
+
+      const [activeAddress, walletNames] =
+        permissions.length > 0
+          ? await Promise.all([
+              wallet.getActiveAddress().catch(() => ""),
+              wallet.getWalletNames().catch(() => ({})),
+            ])
+          : ["", {}];
+
+      handleAuthChange(
+        {
+          walletName: wallet.walletName,
+          name: walletNames[activeAddress],
+          email: `${Object.keys(walletNames).length} wallets`,
+          walletAddress: activeAddress,
+        },
+        true,
+      );
+    }
+
+    async function handleWalletSwitch(e) {
+      console.log("walletSwitch EVENT =", e);
+
+      const { address } = e.detail || {};
+      const walletNames = await wallet.getWalletNames().catch(() => ({}));
+
+      handleAuthChange(
+        {
+          walletName: wallet.walletName,
+          name: walletNames[address],
+          email: `${Object.keys(walletNames).length} wallets`,
+          walletAddress: address,
+        },
+        true,
+      );
+    }
+
+    console.log("START LISTENING");
+
+    window.addEventListener("arweaveWalletLoaded", handleWalletLoaded);
+    window.addEventListener("walletSwitch", handleWalletSwitch);
+
+    if (!wallet.events) return;
+
+    wallet.events.on("connect", async (e) => {
+      console.log("connect EVENT =", e);
+
+      const { permissions = [] } = e || {};
+
+      const [activeAddress, walletNames] =
+        permissions.length > 0
+          ? await Promise.all([
+              wallet.getActiveAddress().catch(() => ""),
+              wallet.getWalletNames().catch(() => ({})),
+            ])
+          : ["", {}];
+
+      handleAuthChange(
+        {
+          walletName: wallet.walletName,
+          name: walletNames[activeAddress],
+          email: `${Object.keys(walletNames).length} wallets`,
+          walletAddress: activeAddress,
+        },
+        true,
+      );
+    });
+
+    wallet.events.on("disconnect", (e) => {
+      console.log("disconnect EVENT =", e);
+      handleAuthChange({}, false);
+    });
+
+    wallet.events.on("activeAddress", (activeAddress) => {
+      console.log("activeAddress EVENT =", activeAddress);
+      // handleAuthChange({}, false);
+    });
+
+    wallet.events.on("addresses", (addresses) => {
+      console.log("addresses EVENT =", addresses);
+      // handleAuthChange({}, false);
+    });
 
     return () => {
-      removeAuthEventListener();
-      removeErrorEventListener();
+      window.removeEventListener("arweaveWalletLoaded", handleWalletLoaded);
+      window.removeEventListener("walletSwitch", handleWalletSwitch);
+
+      if (!wallet.events) return;
+
+      wallet.events.off("connect");
+      wallet.events.off("disconnect");
+      wallet.events.off("activeAddress");
+      wallet.events.off("addresses");
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1361,8 +1491,9 @@ function App() {
             <button className="footer__action" onClick={handleSwitchWallet}>
               <img
                 className="footer__actionImg"
-                src={`./wallet-icons/${walletType}.png`}
-                alt={`${walletType} Icon`}
+                src={`./wallet-icons/${walletIcon}.png`}
+                title={walletIcon}
+                alt={`${walletIcon} Icon`}
               />
             </button>
             <button className="footer__action" onClick={handleSettings}>
