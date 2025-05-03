@@ -64,9 +64,22 @@ function App() {
     if (inputElement) inputsRef.current[inputElement.name] = inputElement;
   }, []);
 
-  // User Details:
+  // Wallet info and user details for the UserCard component:
 
-  const [{ userDetails, isAuthenticated }, setAuthState] = useState({});
+  const [walletInfo, setWalletInfo] = useState({
+    walletAlias: "",
+    walletAddress: "",
+    walletCount: 0,
+    walletPermissions: [],
+    walletReady: false,
+  });
+
+  const [userDetails, setUserDetails] = useState({
+    name: "",
+    email: "",
+    picture: "",
+    authProvider: "",
+  });
 
   // Settings:
 
@@ -114,7 +127,9 @@ function App() {
   });
 
   const handleSwitchWallet = useCallback(() => {
-    setAuthState({});
+    console.log("DEBUG 1");
+    setWalletInfo({});
+    setUserDetails({});
     setResults({});
     setSettings((prevSettings) => {
       const walletTypeIndex = WALLET_TYPES.indexOf(prevSettings.walletType);
@@ -226,13 +241,35 @@ function App() {
   const [wallet, setWallet] = useState(window.arweaveWallet || null);
 
   let walletIcon = walletType;
+  let walletLabel = wallet?.walletName || "-";
 
-  if (walletType === "Wander Embedded" && wallet.walletName === "ArConnect") {
+  if (walletType === "Wander Embedded" && walletLabel === "ArConnect") {
     walletIcon = "Wander Connect Fallback to Wander BE";
+    walletLabel = "Wander Connect => BE";
   }
 
-  const handleOnAuth = useCallback((...args) => {
-    setWallet(window.arweaveWallet);
+  const handleOnAuth = useCallback(({ authType, userDetails }) => {
+    if (authType === "NATIVE_WALLET") {
+      setWallet(window.arweaveWallet);
+    }
+
+    // When we sign out from Wander Connect, the wallet will not dispatch a disconnect event, because the dApp hasn't
+    // been disconnected, and there's not event such as "wallet unload":
+
+    if (!userDetails) {
+      setWalletInfo({});
+    }
+
+    setUserDetails({
+      name:
+        userDetails?.name ||
+        userDetails?.fullName ||
+        userDetails?.username ||
+        "",
+      email: userDetails?.email || "",
+      picture: userDetails?.picture || "",
+      authProvider: authType || "",
+    });
   }, []);
 
   const initWallet = useCallback(() => {
@@ -407,7 +444,7 @@ function App() {
 
     if (!hasLoggedInRef.current) return;
 
-    setAuthState({});
+    // handleWalletInfoChange({});
 
     async function reconnectOnHotReload() {
       console.groupCollapsed(`Reconnecting due to hot reloading...`);
@@ -434,14 +471,16 @@ function App() {
   // want to add duplicate event listeners. However, if we define the listener function inside `useEffect`, two
   // different instances will be created an the `EventListenerHandler` won't be able to see they are the same.
 
-  const handleAuthChange = useCallback((userDetails, isAuthenticated) => {
-    console.log("onAuthChange =", { userDetails, isAuthenticated });
+  /*
+  const handleWalletInfoChange = useCallback((walletInfo) => {
+    // console.log("walletInfo =", walletInfo);
 
     // This is only here due to hot reloading in development:
     hasLoggedInRef.current = hasLoggedInRef.current || isAuthenticated;
 
-    setAuthState({ userDetails, isAuthenticated });
+    setWalletInfo(walletInfo);
   }, []);
+  */
 
   const handleError = useCallback((error) => {
     console.error("onError =", error);
@@ -450,12 +489,12 @@ function App() {
   useEffect(() => {
     if (!wallet) return;
 
-    handleAuthChange({}, false);
+    setWalletInfo({});
 
     if (wallet.walletName === "Othent KMS") {
       const removeAuthEventListener = wallet.addEventListener(
         "auth",
-        handleAuthChange,
+        setWalletInfo,
       );
 
       const removeErrorEventListener = throwErrors
@@ -471,7 +510,7 @@ function App() {
     }
 
     async function handleWalletLoaded(e) {
-      console.log("arweaveWalletLoaded EVENT", e);
+      console.log("EVENT arweaveWalletLoaded", e);
 
       const { permissions = [] } = e.detail || {};
 
@@ -483,45 +522,71 @@ function App() {
             ])
           : ["", {}];
 
-      handleAuthChange(
-        {
-          walletName: wallet.walletName,
-          name: walletNames[activeAddress],
-          email: `${Object.keys(walletNames).length} wallets`,
-          walletAddress: activeAddress,
-        },
-        true,
-      );
+      setWalletInfo({
+        walletReady: true,
+        walletAlias: walletNames[activeAddress],
+        walletAddress: activeAddress,
+        walletCount: Object.keys(walletNames).length,
+        walletPermissions: permissions,
+      });
     }
 
     async function handleWalletSwitch(e) {
-      console.log("walletSwitch EVENT =", e);
+      console.log("EVENT walletSwitch", e);
 
       const { address } = e.detail || {};
-      const walletNames = await wallet.getWalletNames().catch(() => ({}));
 
-      handleAuthChange(
-        {
-          walletName: wallet.walletName,
-          name: walletNames[address],
-          email: `${Object.keys(walletNames).length} wallets`,
+      // If there's no address, the wallet has been disconnected, which is already handled by the disconnect listener:
+
+      if (address) {
+        const walletNames = await wallet.getWalletNames().catch(() => ({}));
+
+        setWalletInfo((prevWalletInfo) => ({
+          walletReady: true,
+          walletAlias: walletNames[address],
           walletAddress: address,
-        },
-        true,
-      );
+          walletCount: Object.keys(walletNames).length,
+          walletPermissions: prevWalletInfo.walletPermissions,
+        }));
+      }
     }
-
-    console.log("START LISTENING");
 
     window.addEventListener("arweaveWalletLoaded", handleWalletLoaded);
     window.addEventListener("walletSwitch", handleWalletSwitch);
 
     if (!wallet.events) return;
 
-    wallet.events.on("connect", async (e) => {
-      console.log("connect EVENT =", e);
+    wallet.events.on("connect", (e) => {
+      console.log("EVENT connect", e);
+      // Already handled by permissions.
+      // setWalletInfo({ ... });
+    });
 
-      const { permissions = [] } = e || {};
+    wallet.events.on("disconnect", (e) => {
+      console.log("EVENT disconnect", e);
+      // "permissions" won't be dispatched when the app is disconnected, so we also need to listen to "disconnect":
+      setWalletInfo({
+        walletReady: true,
+        walletPermissions: [],
+      });
+    });
+
+    wallet.events.on("activeAddress", (activeAddress) => {
+      console.log("EVENT activeAddress", activeAddress);
+      // Already handled by walletSwitch.
+      // setWalletInfo({ ... });
+    });
+
+    wallet.events.on("addresses", (addresses) => {
+      console.log("EVENT addresses", addresses);
+      // TODO: Not handled yet. Useful if we want to be notified about wallets being added/removed.
+      // setWalletInfo({ ... });
+    });
+
+    wallet.events.on("permissions", async (permissions) => {
+      console.log("EVENT permissions", permissions);
+
+      // If there're no permissions, the wallet has been disconnected, which is already handled by the disconnect listener:
 
       const [activeAddress, walletNames] =
         permissions.length > 0
@@ -531,30 +596,19 @@ function App() {
             ])
           : ["", {}];
 
-      handleAuthChange(
-        {
-          walletName: wallet.walletName,
-          name: walletNames[activeAddress],
-          email: `${Object.keys(walletNames).length} wallets`,
-          walletAddress: activeAddress,
-        },
-        true,
-      );
+      setWalletInfo({
+        walletReady: true,
+        walletAlias: walletNames[activeAddress] || "",
+        walletAddress: activeAddress || "",
+        walletCount: Object.keys(walletNames).length,
+        walletPermissions: permissions,
+      });
     });
 
-    wallet.events.on("disconnect", (e) => {
-      console.log("disconnect EVENT =", e);
-      handleAuthChange({}, false);
-    });
-
-    wallet.events.on("activeAddress", (activeAddress) => {
-      console.log("activeAddress EVENT =", activeAddress);
-      // handleAuthChange({}, false);
-    });
-
-    wallet.events.on("addresses", (addresses) => {
-      console.log("addresses EVENT =", addresses);
-      // handleAuthChange({}, false);
+    wallet.events.on("gateway", (gateway) => {
+      console.log("EVENT gateway", gateway);
+      // TODO: Not handled yet.
+      // setWalletInfo({ ... });
     });
 
     return () => {
@@ -567,6 +621,8 @@ function App() {
       wallet.events.off("disconnect");
       wallet.events.off("activeAddress");
       wallet.events.off("addresses");
+      wallet.events.off("permissions");
+      wallet.events.off("gateway");
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -649,10 +705,6 @@ function App() {
   const handleDisconnect = getHandler(
     async () => {
       const result = await wallet.disconnect();
-
-      if (wallet.walletName === "ArConnect") {
-        setAuthState({});
-      }
 
       return { result, isValid: true };
     },
@@ -1062,8 +1114,9 @@ function App() {
         <p>Check the DevTools Console for additional information.</p>
 
         <UserCard
+          walletName={walletLabel}
+          walletInfo={walletInfo}
           userDetails={userDetails}
-          isAuthenticated={isAuthenticated}
           showDetailsJSON={showDetailsJSON}
           setShowDetailsJSON={setShowDetailsJSON}
         />
