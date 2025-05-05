@@ -296,6 +296,8 @@ module.exports = function (webpackEnv) {
     resolve: {
       fallback: {
         path: false,
+        crypto: false,
+        stream: false,
       },
 
       // This allows you to set a fallback for where webpack should look for modules.
