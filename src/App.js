@@ -291,12 +291,19 @@ function App() {
     } else if (walletType === "Wander Embedded") {
       const wanderInstance = new WanderEmbedded({
         clientId: "ALPHA",
-        theme: "dark",
         baseURL:
           process.env.NODE_ENV === "development"
             ? "http://localhost:5173"
             : "https://embed-dev.wander.app",
         baseServerURL: "https://embed-api-dev.wander.app",
+        theme: "light",
+        iframe: {
+          theme: "light",
+        },
+        button: {
+          theme: "light",
+          position: "bottom-left",
+        },
         onAuth: handleOnAuth,
       });
 
