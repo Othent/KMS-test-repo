@@ -55,6 +55,12 @@ const ALL_PERMISSIONS = [
 
 const WALLET_TYPES = ["ArConnect", "Wander Embedded", "Othent KMS"];
 
+function isWanderConnectNativeWalletEnabled() {
+  return (
+    localStorage.getItem("WANDER_CONNECT_NATIVE_WALLET_ENABLED") === "true"
+  );
+}
+
 function App() {
   // Inputs:
 
@@ -127,8 +133,14 @@ function App() {
   });
 
   const handleSwitchWallet = useCallback(() => {
-    console.log("DEBUG 1");
-    setWalletInfo({});
+    if (walletType !== "ArConnect" || !isWanderConnectNativeWalletEnabled()) {
+      // When switching from the first (Wander BE = "ArConnect") to the second wallet
+      // (Wander Connect = "Wander Embedded") Wander Connect's SDK won't change the injected wallet API, so we don't
+      // reset the wallet info in that case.
+
+      setWalletInfo({});
+    }
+
     setUserDetails({});
     setResults({});
     setSettings((prevSettings) => {
@@ -141,7 +153,7 @@ function App() {
         walletType,
       };
     });
-  }, []);
+  }, [walletType]);
 
   const handleToggleLogPosition = useCallback(() => {
     setSettings((prevSettings) => ({
@@ -249,14 +261,13 @@ function App() {
   }
 
   const handleOnAuth = useCallback(({ authType, userDetails }) => {
-    if (authType === "NATIVE_WALLET") {
-      setWallet(window.arweaveWallet);
-    }
+    setWallet(window.arweaveWallet);
 
     // When we sign out from Wander Connect, the wallet will not dispatch a disconnect event, because the dApp hasn't
-    // been disconnected, and there's not event such as "wallet unload":
+    // been disconnected, and there's no event such as "wallet unload". So, instead, we reset the wallet info when we
+    // get any kind of auth event with no user details:
 
-    if (!userDetails) {
+    if (!userDetails && !isWanderConnectNativeWalletEnabled()) {
       setWalletInfo({});
     }
 
@@ -354,9 +365,7 @@ function App() {
     if (actualWalletName !== walletType) {
       if (
         walletType === "Wander Embedded" &&
-        localStorage
-          .getItem("WANDER_CONNECT_AUTH_STATE")
-          .includes("NATIVE_WALLET")
+        isWanderConnectNativeWalletEnabled()
       ) {
         console.warn("Wander Connect falling back to Wander BE.");
       } else {
@@ -511,6 +520,8 @@ function App() {
 
     async function handleWalletLoaded(e) {
       console.log("EVENT arweaveWalletLoaded", e);
+
+      setWallet(window.arweaveWallet);
 
       const { permissions = [] } = e.detail || {};
 

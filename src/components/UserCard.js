@@ -29,7 +29,7 @@ export function UserCard({
     readyClass = "isReady";
   }
 
-  const permissions = walletInfo.walletPermissions || [];
+  const permissions = walletInfo?.walletPermissions || [];
 
   let connectionEmoji = "⛓️‍💥";
   let connectionTitle = "Not connected";
