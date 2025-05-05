@@ -292,43 +292,11 @@ function App() {
       const wanderInstance = new WanderEmbedded({
         clientId: "ALPHA",
         theme: "dark",
-        base: "http://localhost:5173",
-        // baseURL: "https://embed-dev.wander.app",
-        // baseServerURL: "https://embed-api-dev.wander.app",
-        iframe: {
-          routeLayout: {
-            type: "popup",
-            // fixedHeight: 600,
-          },
-
-          theme: "light",
-
-          /*
-          cssVars: {
-            light: {
-              boxShadow: "0 0 32px 8px blue",
-            },
-            dark: {
-              boxShadow: "0 0 32px 8px red",
-            },
-          }
-            */
-        },
-        button: {
-          position: "bottom-left",
-          theme: "light",
-
-          /*
-          cssVars: {
-            light: {
-              background: "blue",
-            },
-            dark: {
-              background: "red",
-            },
-          }
-          */
-        },
+        baseURL:
+          process.env.NODE_ENV === "development"
+            ? "http://localhost:5173"
+            : "https://embed-dev.wander.app",
+        baseServerURL: "https://embed-api-dev.wander.app",
         onAuth: handleOnAuth,
       });
 
