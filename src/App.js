@@ -13,7 +13,7 @@ import { UserCard } from "./components/UserCard";
 import { SelectField } from "./components/SelectField";
 import { LogItem } from "./components/LogItem";
 import { replacer } from "./utils/replacer";
-import { WanderEmbedded } from "@wanderapp/embed-sdk";
+import { WanderConnect } from "@wanderapp/connect";
 
 import "./App.css";
 
@@ -51,13 +51,14 @@ const ALL_PERMISSIONS = [
   "ENCRYPT",
   "SIGN_TRANSACTION",
   "SIGNATURE",
+  "ACCESS_TOKENS",
 ];
 
-const WALLET_TYPES = ["ArConnect", "Wander Embedded", "Othent KMS"];
+const WALLET_TYPES = ["ArConnect", "Wander Connect", "Othent KMS"];
 
-function isWanderConnectNativeWalletEnabled() {
+function isWanderConnectBrowserWalletEnabled() {
   return (
-    localStorage.getItem("WANDER_CONNECT_NATIVE_WALLET_ENABLED") === "true"
+    localStorage.getItem("WANDER_CONNECT_BROWSER_WALLET_ENABLED") === "true"
   );
 }
 
@@ -133,9 +134,9 @@ function App() {
   });
 
   const handleSwitchWallet = useCallback(() => {
-    if (walletType !== "ArConnect" || !isWanderConnectNativeWalletEnabled()) {
+    if (walletType !== "ArConnect" || !isWanderConnectBrowserWalletEnabled()) {
       // When switching from the first (Wander BE = "ArConnect") to the second wallet
-      // (Wander Connect = "Wander Embedded") Wander Connect's SDK won't change the injected wallet API, so we don't
+      // (Wander Connect = "Wander Connect") Wander Connect's SDK won't change the injected wallet API, so we don't
       // reset the wallet info in that case.
 
       setWalletInfo({});
@@ -255,7 +256,7 @@ function App() {
   let walletIcon = walletType;
   let walletLabel = wallet?.walletName || "-";
 
-  if (walletType === "Wander Embedded" && walletLabel === "ArConnect") {
+  if (walletType === "Wander Connect" && walletLabel === "ArConnect") {
     walletIcon = "Wander Connect Fallback to Wander BE";
     walletLabel = "Wander Connect => BE";
   }
@@ -267,7 +268,7 @@ function App() {
     // been disconnected, and there's no event such as "wallet unload". So, instead, we reset the wallet info when we
     // get any kind of auth event with no user details:
 
-    if (!userDetails && !isWanderConnectNativeWalletEnabled()) {
+    if (!userDetails && !isWanderConnectBrowserWalletEnabled()) {
       setWalletInfo({});
     }
 
@@ -288,30 +289,29 @@ function App() {
 
     if (walletType === "ArConnect") {
       wallet = window.arweaveWallet;
-    } else if (walletType === "Wander Embedded") {
-      const wanderInstance = new WanderEmbedded({
-        clientId: "ALPHA",
+    } else if (walletType === "Wander Connect") {
+      const wanderInstance = new WanderConnect({
+        clientId: "FREE_TRIAL",
         baseURL:
           process.env.NODE_ENV === "development"
             ? "http://localhost:5173"
-            : "https://embed-dev.wander.app",
-        baseServerURL: "https://embed-api-dev.wander.app",
+            : "https://connect-dev.wander.app",
+        baseServerURL:
+          process.env.NODE_ENV === "development"
+            ? "http://localhost:3001"
+            : "https://connect-api-dev.wander.app",
         theme: "light",
-        iframe: {
-          theme: "light",
-        },
         button: {
-          theme: "light",
           position: "bottom-left",
         },
         onAuth: handleOnAuth,
       });
 
-      // After `WanderEmbedded` is instantiated, `window.arweaveWallet` is set/updated with its own API,
+      // After `WanderConnect` is instantiated, `window.arweaveWallet` is set/updated with its own API,
       // so we just need to grab a reference to it:
       wallet = window.arweaveWallet;
 
-      // For easier development / testing of WanderEmbedded-specific features (e.g. theming) from the Console:
+      // For easier development / testing of WanderConnect-specific features (e.g. theming) from the Console:
       window.wanderInstance = wanderInstance;
     } else if (walletType === "Othent KMS") {
       wallet = new Othent({
@@ -339,8 +339,8 @@ function App() {
 
     if (actualWalletName !== walletType) {
       if (
-        walletType === "Wander Embedded" &&
-        isWanderConnectNativeWalletEnabled()
+        walletType === "Wander Connect" &&
+        isWanderConnectBrowserWalletEnabled()
       ) {
         console.warn("Wander Connect falling back to Wander BE.");
       } else {
