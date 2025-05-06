@@ -295,11 +295,11 @@ function App() {
         baseURL:
           process.env.NODE_ENV === "development"
             ? "http://localhost:5173"
-            : "https://connect-dev.wander.app",
+            : "https://connect.wander.app",
         baseServerURL:
           process.env.NODE_ENV === "development"
             ? "http://localhost:3001"
-            : "https://connect-api-dev.wander.app",
+            : "https://connect-api.wander.app",
         theme: "light",
         button: {
           position: "bottom-left",
