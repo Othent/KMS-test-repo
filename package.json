@@ -14,8 +14,8 @@
     "prepare": "husky",
     "link-othent": "pnpm add ../KeyManagementService/ && pnpm link ../KeyManagementService/",
     "install-othent": "pnpm add @othent/kms@latest",
-    "link-embed": "pnpm add ../wander/Wander/wander-embedded-sdk/ && pnpm link ../wander/Wander/wander-embedded-sdk/",
-    "install-embed": "pnpm add @wanderapp/embed-sdk@latest"
+    "link-connect": "pnpm add ../wander/Wander/wander-connect-sdk/ && pnpm link ../wander/Wander/wander-connect-sdk/",
+    "install-connect": "pnpm add @wanderapp/connect@latest"
   },
   "dependencies": {
     "@babel/core": "^7.16.0",
@@ -23,7 +23,7 @@
     "@othent/kms": "^2.1.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "@svgr/webpack": "^5.5.0",
-    "@wanderapp/embed-sdk": "^0.0.7",
+    "@wanderapp/connect": "^0.1.0",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "babel-jest": "^27.4.2",
@@ -68,6 +68,7 @@
     "style-loader": "^3.3.1",
     "tailwindcss": "^3.0.2",
     "terser-webpack-plugin": "^5.2.5",
+    "warp-arbundles": "^1.0.4",
     "webpack": "^5.64.4",
     "webpack-dev-server": "^4.6.0",
     "webpack-manifest-plugin": "^4.0.2",
