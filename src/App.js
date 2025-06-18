@@ -13,6 +13,8 @@ import { UserCard } from "./components/UserCard";
 import { SelectField } from "./components/SelectField";
 import { LogItem } from "./components/LogItem";
 import { replacer } from "./utils/replacer";
+import { logWalletInfo } from "./utils/log.js";
+import { isWanderConnectBrowserWalletEnabled } from "./utils/wander-connect.js";
 import { WanderConnect } from "@wanderapp/connect";
 
 import "./App.css";
@@ -54,13 +56,7 @@ const ALL_PERMISSIONS = [
   "ACCESS_TOKENS",
 ];
 
-const WALLET_TYPES = ["ArConnect", "Wander Connect", "Othent KMS"];
-
-function isWanderConnectBrowserWalletEnabled() {
-  return (
-    localStorage.getItem("WANDER_CONNECT_BROWSER_WALLET_ENABLED") === "true"
-  );
-}
+const WALLET_TYPES = ["ArConnect", "Wander Connect"];
 
 function App() {
   // Inputs:
@@ -96,65 +92,14 @@ function App() {
     );
 
   const [
-    {
-      // Playground:
-      useStrings,
-      postTransactions,
-      walletType,
-      logPosition,
-
-      // Othent:
-      serverBaseURL,
-      auth0Strategy,
-      auth0Cache,
-      auth0LogInMethod,
-      autoConnect,
-      throwErrors,
-      persistCookie,
-      persistLocalStorage,
-    },
+    { postTransactions, walletType, logPosition },
     // TODO: Add UI for settings:
     setSettings,
   ] = useState({
-    // Playground:
-    useStrings: Othent.walletVersion.startsWith("1."),
     postTransactions: false,
     walletType: WALLET_TYPES[0],
     logPosition: "sticky",
-
-    // Othent:
-    serverBaseURL: undefined,
-    auth0Strategy: "refresh-tokens",
-    auth0Cache: "memory",
-    auth0LogInMethod: "popup",
-    autoConnect: "lazy",
-    throwErrors: true,
-    persistCookie: false,
-    persistLocalStorage: true,
   });
-
-  const handleSwitchWallet = useCallback(() => {
-    if (walletType !== "ArConnect" || !isWanderConnectBrowserWalletEnabled()) {
-      // When switching from the first (Wander BE = "ArConnect") to the second wallet
-      // (Wander Connect = "Wander Connect") Wander Connect's SDK won't change the injected wallet API, so we don't
-      // reset the wallet info in that case.
-
-      setWalletInfo({});
-    }
-
-    setUserDetails({});
-    setResults({});
-    setSettings((prevSettings) => {
-      const walletTypeIndex = WALLET_TYPES.indexOf(prevSettings.walletType);
-      const walletType =
-        WALLET_TYPES[(walletTypeIndex + 1) % WALLET_TYPES.length];
-
-      return {
-        ...prevSettings,
-        walletType,
-      };
-    });
-  }, [walletType]);
 
   const handleToggleLogPosition = useCallback(() => {
     setSettings((prevSettings) => ({
@@ -248,7 +193,7 @@ function App() {
     // OLD BACKEND + OLD SDK: Works with `string` inputs, doesn't work with `TextEncoder` inputs
     // OLD BACKEND + NEW SDK: Works with `string` inputs, works with `TextEncoder` inputs.
 
-    return useStrings ? dataStr : new TextEncoder().encode(dataStr);
+    return new TextEncoder().encode(dataStr);
   };
 
   const [wallet, setWallet] = useState(window.arweaveWallet || null);
@@ -261,14 +206,33 @@ function App() {
     walletLabel = "Wander Connect => BE";
   }
 
-  const handleOnAuth = useCallback(({ authType, userDetails }) => {
-    setWallet(window.arweaveWallet);
+  const walletNameRef = useRef(null);
+
+  walletNameRef.current = wallet?.walletName || null;
+
+  const handleOnAuth = useCallback((authInfo) => {
+    console.log("onAuth =", authInfo);
+
+    if (walletNameRef.current !== window.arweaveWallet.walletName) {
+      // This code runs in the following scenario:
+      // - We select the BE option in Wander Connect.
+      // - Reload the page.
+      // - Click the wallet button once to select Wander Connect.
+      // - Authenticate to switch back to using Wander Connect.
+
+      console.log("Wallet changed after arweaveWalletLoaded");
+    }
+
+    setWallet(window.arweaveWallet || null);
+
+    const { authType, userDetails } = authInfo;
 
     // When we sign out from Wander Connect, the wallet will not dispatch a disconnect event, because the dApp hasn't
     // been disconnected, and there's no event such as "wallet unload". So, instead, we reset the wallet info when we
     // get any kind of auth event with no user details:
 
     if (!userDetails && !isWanderConnectBrowserWalletEnabled()) {
+      console.log("HERE 1");
       setWalletInfo({});
     }
 
@@ -284,213 +248,158 @@ function App() {
     });
   }, []);
 
-  const initWallet = useCallback(() => {
-    let wallet = null;
+  const handleSwitchWallet = useCallback(() => {
+    const walletTypeIndex = WALLET_TYPES.indexOf(walletType);
+    const nextWalletType =
+      WALLET_TYPES[(walletTypeIndex + 1) % WALLET_TYPES.length];
 
-    if (walletType === "ArConnect") {
-      wallet = window.arweaveWallet;
-    } else if (walletType === "Wander Connect") {
+    if (
+      isWanderConnectBrowserWalletEnabled() &&
+      (nextWalletType === "Wander Connect" || walletType === "Wander Connect")
+    ) {
+      // When switching to/from Wander Connect, if Wander Connect is/was falling back to BE, the injected wallet API
+      // won't change (it's already the one from Wander BE (ArConnect)), so we don't reset the wallet info.
+      console.warn("Wander Connect falling back to Wander BE.");
+    } else {
+      console.log("HERE 2");
+      // In all other cases, we do:
+      setWalletInfo({});
+    }
+
+    setUserDetails({});
+    setResults({});
+    setSettings((prevSettings) => {
+      return {
+        ...prevSettings,
+        walletType: nextWalletType,
+      };
+    });
+
+    if (nextWalletType === "Wander Connect") {
       const wanderInstance = new WanderConnect({
         clientId: "FREE_TRIAL",
         baseURL:
-          process.env.NODE_ENV === "development"
+          process.env.NODE_ENV === "developments"
             ? "http://localhost:5173"
-            : "https://connect.wander.app",
+            : "https://connect-dev.wander.app",
+        baseServerURL: "https://connect-api-dev.wander.app",
+        /*
         baseServerURL:
           process.env.NODE_ENV === "development"
             ? "http://localhost:3001"
             : "https://connect-api.wander.app",
+        */
         theme: "light",
         button: {
           position: "bottom-left",
+          // cssVars: {
+          //   gapY: 64,
+          //   gapX: 64,
+          // }
         },
+        /*
+        iframe: {
+          customStyles: `
+            .iframe-wrapper {
+              overflow: visible;
+            }
+
+            .iframe-wrapper::before {
+              content: "";
+              position: absolute;
+              inset: -32px;
+              box-shadow: 0 0 0 1px rgba(0, 0, 0, .125);
+            }
+
+            .iframe {
+              var(--borderRadius);
+            }
+
+          `,
+        },
+        */
         onAuth: handleOnAuth,
       });
 
-      // After `WanderConnect` is instantiated, `window.arweaveWallet` is set/updated with its own API,
-      // so we just need to grab a reference to it:
-      wallet = window.arweaveWallet;
-
       // For easier development / testing of WanderConnect-specific features (e.g. theming) from the Console:
       window.wanderInstance = wanderInstance;
-    } else if (walletType === "Othent KMS") {
-      wallet = new Othent({
-        debug: true,
-        serverBaseURL,
-        auth0Strategy,
-        auth0Cache,
-        auth0LogInMethod,
-        autoConnect,
-        throwErrors,
-        persistCookie,
-        persistLocalStorage,
-        appInfo,
+    } else if (window.wanderInstance) {
+      window.wanderInstance.destroy();
+      delete window.wanderInstance;
+    }
 
-        // Local server:
-        // serverBaseURL: "http://localhost:3010",
+    setWallet(window.arweaveWallet || null);
+  }, [walletType, setWallet, handleOnAuth]);
 
-        // Development Auth0 tenant and app:
-        // auth0Domain: "gmzcodes-test.eu.auth0.com",
-        // auth0ClientId: "RSEz2IKqExKJTMqJ1crVSqjBT12ZgsfW",
+  useEffect(() => {
+    function setWalletEvents() {
+      if (!wallet?.events) return;
+
+      wallet.events.on("connect", (e) => {
+        console.log("EVENT connect", e);
+        // Already handled by permissions.
+        // setWalletInfo({ ... });
+      });
+
+      wallet.events.on("disconnect", (e) => {
+        console.log("EVENT disconnect", e);
+        // "permissions" won't be dispatched when the app is disconnected, so we also need to listen to "disconnect":
+        setWalletInfo({
+          walletReady: true,
+          walletPermissions: [],
+        });
+      });
+
+      wallet.events.on("activeAddress", (activeAddress) => {
+        console.log("EVENT activeAddress", activeAddress);
+        // Already handled by walletSwitch.
+        // setWalletInfo({ ... });
+      });
+
+      wallet.events.on("addresses", (addresses) => {
+        console.log("EVENT addresses", addresses);
+        // TODO: Not handled yet. Useful if we want to be notified about wallets being added/removed.
+        // setWalletInfo({ ... });
+      });
+
+      wallet.events.on("permissions", async (permissions) => {
+        console.log("EVENT permissions", permissions);
+
+        // If there're no permissions, the wallet has been disconnected, which is already handled by the disconnect listener:
+
+        const [activeAddress, walletNames] =
+          permissions.length > 0
+            ? await Promise.all([
+                wallet.getActiveAddress().catch(() => ""),
+                wallet.getWalletNames().catch(() => ({})),
+              ])
+            : ["", {}];
+
+        setWalletInfo({
+          walletReady: true,
+          walletAlias: walletNames[activeAddress] || "",
+          walletAddress: activeAddress || "",
+          walletCount: Object.keys(walletNames).length,
+          walletPermissions: permissions,
+        });
+      });
+
+      wallet.events.on("gateway", (gateway) => {
+        console.log("EVENT gateway", gateway);
+        // TODO: Not handled yet.
+        // setWalletInfo({ ... });
       });
     }
 
-    let actualWalletName = wallet?.walletName;
+    function removeWalletEvents() {
+      if (!wallet?.events) return;
 
-    if (actualWalletName !== walletType) {
-      if (
-        walletType === "Wander Connect" &&
-        isWanderConnectBrowserWalletEnabled()
-      ) {
-        console.warn("Wander Connect falling back to Wander BE.");
-      } else {
-        wallet = null;
-      }
-    }
-
-    setWallet(wallet);
-
-    if (!wallet) {
-      console.warn(
-        `Could not initialize ${walletType} wallet (got ${actualWalletName}).`,
-      );
-
-      return;
-    }
-
-    console.group(`${wallet.walletName} @ ${wallet.walletVersion}`);
-
-    Object.entries(wallet?.config || {}).forEach(([key, value]) => {
-      console.log(` ${key.padStart(29)} = ${value}`);
-    });
-
-    console.groupEnd();
-
-    return wallet;
-  }, [
-    setWallet,
-    walletType,
-    handleOnAuth,
-    serverBaseURL,
-    auth0Strategy,
-    auth0Cache,
-    auth0LogInMethod,
-    autoConnect,
-    throwErrors,
-    persistCookie,
-    persistLocalStorage,
-  ]);
-
-  useEffect(() => {
-    let wallet = initWallet();
-    let intervalID = 0;
-    let initializationAttempts = 0;
-
-    if (!wallet) {
-      intervalID = setInterval(() => {
-        wallet = initWallet();
-
-        if (wallet || ++initializationAttempts >= 16) {
-          clearInterval(intervalID);
-
-          if (!wallet) {
-            console.error("Could not initialize wallet");
-          }
-        }
-      }, 250);
-    }
-
-    return () => {
-      clearInterval(intervalID);
-
-      if (window.wanderInstance) {
-        window.wanderInstance.destroy();
-
-        delete window.wanderInstance;
-      }
-    };
-  }, [initWallet, walletType]);
-
-  // These `useRef` and `useEffect` are here to re-connect automatically, when `othent` changes while running the
-  // project in DEV mode with hot reloading.
-
-  const hasLoggedInRef = useRef(false);
-
-  useEffect(() => {
-    if (!wallet || wallet.walletName !== "Othent KMS") return;
-
-    const cleanupFn = wallet.startTabSynching();
-
-    if (wallet.config.auth0LogInMethod === "redirect") {
-      // This is not needed (NOOP) unless auth0LogInMethod = "redirect":
-      wallet.completeConnectionAfterRedirect();
-    }
-
-    if (!hasLoggedInRef.current) return;
-
-    // handleWalletInfoChange({});
-
-    async function reconnectOnHotReload() {
-      console.groupCollapsed(`Reconnecting due to hot reloading...`);
-
-      try {
-        // This won't work if `auth0Strategy = "refresh-memory"`.
-
-        await wallet.connect();
-      } catch (err) {
-        console.log("connect() error:", err);
-      }
-
-      console.groupEnd();
-    }
-
-    reconnectOnHotReload();
-
-    return cleanupFn;
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wallet]);
-
-  // We need to use `useCallback` here as React will call the `useEffect` below twice in development mode, and we don't
-  // want to add duplicate event listeners. However, if we define the listener function inside `useEffect`, two
-  // different instances will be created an the `EventListenerHandler` won't be able to see they are the same.
-
-  /*
-  const handleWalletInfoChange = useCallback((walletInfo) => {
-    // console.log("walletInfo =", walletInfo);
-
-    // This is only here due to hot reloading in development:
-    hasLoggedInRef.current = hasLoggedInRef.current || isAuthenticated;
-
-    setWalletInfo(walletInfo);
-  }, []);
-  */
-
-  const handleError = useCallback((error) => {
-    console.error("onError =", error);
-  }, []);
-
-  useEffect(() => {
-    if (!wallet) return;
-
-    setWalletInfo({});
-
-    if (wallet.walletName === "Othent KMS") {
-      const removeAuthEventListener = wallet.addEventListener(
-        "auth",
-        setWalletInfo,
-      );
-
-      const removeErrorEventListener = throwErrors
-        ? () => {
-            /* NOOP */
-          }
-        : wallet.addEventListener("error", handleError);
-
-      return () => {
-        removeAuthEventListener();
-        removeErrorEventListener();
-      };
+      wallet.events.off("connect");
+      wallet.events.off("disconnect");
+      wallet.events.off("activeAddress");
+      wallet.events.off("addresses");
+      wallet.events.off("permissions");
+      wallet.events.off("gateway");
     }
 
     async function handleWalletLoaded(e) {
@@ -503,8 +412,8 @@ function App() {
       const [activeAddress, walletNames] =
         permissions.length > 0
           ? await Promise.all([
-              wallet.getActiveAddress().catch(() => ""),
-              wallet.getWalletNames().catch(() => ({})),
+              window.arweaveWallet.getActiveAddress().catch(() => ""),
+              window.arweaveWallet.getWalletNames().catch(() => ({})),
             ])
           : ["", {}];
 
@@ -515,17 +424,23 @@ function App() {
         walletCount: Object.keys(walletNames).length,
         walletPermissions: permissions,
       });
+
+      // wallet.connect(ALL_PERMISSIONS).catch(() => {});
     }
 
     async function handleWalletSwitch(e) {
       console.log("EVENT walletSwitch", e);
+
+      setWallet(window.arweaveWallet);
 
       const { address } = e.detail || {};
 
       // If there's no address, the wallet has been disconnected, which is already handled by the disconnect listener:
 
       if (address) {
-        const walletNames = await wallet.getWalletNames().catch(() => ({}));
+        const walletNames = await window.arweaveWallet
+          .getWalletNames()
+          .catch(() => ({}));
 
         setWalletInfo((prevWalletInfo) => ({
           walletReady: true,
@@ -537,82 +452,17 @@ function App() {
       }
     }
 
+    logWalletInfo(wallet);
+    setWalletEvents(wallet);
     window.addEventListener("arweaveWalletLoaded", handleWalletLoaded);
     window.addEventListener("walletSwitch", handleWalletSwitch);
 
-    if (!wallet.events) return;
-
-    wallet.events.on("connect", (e) => {
-      console.log("EVENT connect", e);
-      // Already handled by permissions.
-      // setWalletInfo({ ... });
-    });
-
-    wallet.events.on("disconnect", (e) => {
-      console.log("EVENT disconnect", e);
-      // "permissions" won't be dispatched when the app is disconnected, so we also need to listen to "disconnect":
-      setWalletInfo({
-        walletReady: true,
-        walletPermissions: [],
-      });
-    });
-
-    wallet.events.on("activeAddress", (activeAddress) => {
-      console.log("EVENT activeAddress", activeAddress);
-      // Already handled by walletSwitch.
-      // setWalletInfo({ ... });
-    });
-
-    wallet.events.on("addresses", (addresses) => {
-      console.log("EVENT addresses", addresses);
-      // TODO: Not handled yet. Useful if we want to be notified about wallets being added/removed.
-      // setWalletInfo({ ... });
-    });
-
-    wallet.events.on("permissions", async (permissions) => {
-      console.log("EVENT permissions", permissions);
-
-      // If there're no permissions, the wallet has been disconnected, which is already handled by the disconnect listener:
-
-      const [activeAddress, walletNames] =
-        permissions.length > 0
-          ? await Promise.all([
-              wallet.getActiveAddress().catch(() => ""),
-              wallet.getWalletNames().catch(() => ({})),
-            ])
-          : ["", {}];
-
-      setWalletInfo({
-        walletReady: true,
-        walletAlias: walletNames[activeAddress] || "",
-        walletAddress: activeAddress || "",
-        walletCount: Object.keys(walletNames).length,
-        walletPermissions: permissions,
-      });
-    });
-
-    wallet.events.on("gateway", (gateway) => {
-      console.log("EVENT gateway", gateway);
-      // TODO: Not handled yet.
-      // setWalletInfo({ ... });
-    });
-
     return () => {
+      removeWalletEvents();
       window.removeEventListener("arweaveWalletLoaded", handleWalletLoaded);
       window.removeEventListener("walletSwitch", handleWalletSwitch);
-
-      if (!wallet.events) return;
-
-      wallet.events.off("connect");
-      wallet.events.off("disconnect");
-      wallet.events.off("activeAddress");
-      wallet.events.off("addresses");
-      wallet.events.off("permissions");
-      wallet.events.off("gateway");
     };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wallet, throwErrors]);
+  }, [wallet]);
 
   function getHandler(fn, options) {
     const { name } = options;
@@ -677,9 +527,7 @@ function App() {
 
   const handleConnect = getHandler(
     async () => {
-      const result = await wallet.connect(
-        wallet.walletName === "Othent KMS" ? undefined : ALL_PERMISSIONS,
-      );
+      const result = await wallet.connect(ALL_PERMISSIONS);
 
       const permissions = await wallet.getPermissions();
 
@@ -842,9 +690,7 @@ function App() {
 
       // For now, decrypt() doesn't support `string` as input. Later, we can make it so that we can pass a B64UrlEncoded
       // (not a regular one) `string` directly:
-      // const ciphertext = useStrings
-      //   ? uint8ArrayTob64Url(encryptReturn)
-      //   : encryptReturn;
+      // const ciphertext = encryptReturn;
 
       const result = await wallet.decrypt(encryptedData, {
         name: "RSA-OAEP",

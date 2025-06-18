@@ -491,3 +491,14 @@ a.input__input {
 .footer__action:hover > .footer__actionImg {
   transform: scale(1.1);
 }
+
+/* Used to easily take screenshots of the button: */
+
+/*
+#wanderConnectButtonHost::before {
+  content: "";
+  position: absolute;
+  inset: -32px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .125);
+}
+*/
