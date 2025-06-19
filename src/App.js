@@ -276,18 +276,25 @@ function App() {
     if (nextWalletType === "Wander Connect") {
       const wanderInstance = new WanderConnect({
         clientId: "FREE_TRIAL",
+
+        // Most common development setup is locally running app paired with development API. Otherwise, use the
+        // production environments for both app and API:
+
         baseURL:
           process.env.NODE_ENV === "development"
             ? "http://localhost:5173"
             : "https://connect.wander.app",
-        baseServerURL: "https://connect-api.wander.app",
-        /*
+
         baseServerURL:
           process.env.NODE_ENV === "development"
-            ? "http://localhost:3001"
+            ? "https://connect-api-dev.wander.app"
             : "https://connect-api.wander.app",
-        */
+
+        // For local API development, uncomment this:
+        // baseServerURL: "http://localhost:3001",
+
         theme: "light",
+
         button: {
           position: "bottom-left",
           // cssVars: {
@@ -295,6 +302,7 @@ function App() {
           //   gapX: 64,
           // }
         },
+
         /*
         iframe: {
           customStyles: `
@@ -316,6 +324,7 @@ function App() {
           `,
         },
         */
+
         onAuth: handleOnAuth,
       });
 
