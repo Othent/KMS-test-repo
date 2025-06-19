@@ -44,7 +44,7 @@ ul {
   min-height: 100dvh;
   max-width: 976px;
   margin: 0 auto;
-  padding-bottom: calc(1rem + 40px);
+  padding-bottom: calc(56px + 16px);
 }
 
 .block {

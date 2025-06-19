@@ -232,7 +232,6 @@ function App() {
     // get any kind of auth event with no user details:
 
     if (!userDetails && !isWanderConnectBrowserWalletEnabled()) {
-      console.log("HERE 1");
       setWalletInfo({});
     }
 
@@ -261,7 +260,6 @@ function App() {
       // won't change (it's already the one from Wander BE (ArConnect)), so we don't reset the wallet info.
       console.warn("Wander Connect falling back to Wander BE.");
     } else {
-      console.log("HERE 2");
       // In all other cases, we do:
       setWalletInfo({});
     }
@@ -1402,29 +1400,40 @@ function App() {
           </div>
         </div>
 
-        <a target="_blank" rel="noreferrer noopener" href="https://othent.io/">
-          othent.io
+        <a
+          target="_blank"
+          rel="noreferrer noopener"
+          href="https://www.wander.app/"
+        >
+          Wander
         </a>
         <a
           target="_blank"
           rel="noreferrer noopener"
-          href="https://docs.othent.io/"
+          href="https://docs.wander.app/"
         >
-          docs.othent.io
+          Docs
         </a>
         <a
           target="_blank"
           rel="noreferrer noopener"
-          href="https://github.com/Othent/KeyManagementService"
+          href="https://embed-test-zeta.vercel.app/"
         >
-          @othent/kms repo
+          Test App
         </a>
         <a
           target="_blank"
           rel="noreferrer noopener"
-          href="https://www.npmjs.com/package/@othent/kms"
+          href="https://github.com/wanderwallet/Wander"
         >
-          @othent/kms npm
+          Repo
+        </a>
+        <a
+          target="_blank"
+          rel="noreferrer noopener"
+          href="https://www.npmjs.com/package/@wanderapp/connect"
+        >
+          NPM
         </a>
         <a
           target="_blank"
