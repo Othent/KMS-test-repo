@@ -277,10 +277,10 @@ function App() {
       const wanderInstance = new WanderConnect({
         clientId: "FREE_TRIAL",
         baseURL:
-          process.env.NODE_ENV === "developments"
+          process.env.NODE_ENV === "development"
             ? "http://localhost:5173"
-            : "https://connect-dev.wander.app",
-        baseServerURL: "https://connect-api-dev.wander.app",
+            : "https://connect.wander.app",
+        baseServerURL: "https://connect-api.wander.app",
         /*
         baseServerURL:
           process.env.NODE_ENV === "development"
