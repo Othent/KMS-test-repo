@@ -9,7 +9,10 @@ export function UserCard({
   let background = "#CCC";
   let authenticationLabel = "Unknown authentication status";
 
-  if (userDetails.authProvider !== "NATIVE_WALLET") {
+  if (
+    userDetails.authProvider &&
+    userDetails.authProvider !== "NATIVE_WALLET"
+  ) {
     // User is authenticated:
     background = "#0B3";
     authenticationLabel = "Authenticated";
