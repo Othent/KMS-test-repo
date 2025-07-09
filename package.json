@@ -23,7 +23,7 @@
     "@othent/kms": "^2.1.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "@svgr/webpack": "^5.5.0",
-    "@wanderapp/connect": "^0.1.8",
+    "@wanderapp/connect": "link:../wander/Wander/wander-connect-sdk",
     "arweave": "^1.15.1",
     "axios": "^1.7.4",
     "babel-jest": "^27.4.2",

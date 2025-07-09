@@ -1,0 +1,2 @@
+overrides:
+  "@wanderapp/connect": link:../wander/Wander/wander-connect-sdk

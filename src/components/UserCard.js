@@ -44,6 +44,27 @@ export function UserCard({
     connectionClass = "isConnected";
   }
 
+  let backupEmoji = "";
+  let backupTitle = "";
+  let backupClass = "";
+
+  if (
+    userDetails.authProvider &&
+    userDetails.authProvider !== "NATIVE_WALLET"
+  ) {
+    const { walletBackupMessage } = walletInfo;
+
+    if (walletBackupMessage || walletBackupMessage === undefined) {
+      backupEmoji = "📦";
+      backupTitle = walletBackupMessage;
+      backupClass = "";
+    } else {
+      backupEmoji = "🎁";
+      backupTitle = walletBackupMessage;
+      backupClass = "isBackedUp";
+    }
+  }
+
   return (
     <>
       <div className="userCard__base">
@@ -86,6 +107,14 @@ export function UserCard({
             >
               {connectionEmoji}
             </span>
+            {backupEmoji ? (
+              <span
+                className={`userCard__backupIndicator ${backupClass}`}
+                title={backupTitle}
+              >
+                {backupEmoji}
+              </span>
+            ) : null}
           </li>
         </ul>
 

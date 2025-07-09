@@ -120,7 +120,8 @@ ul {
 }
 
 .userCard__readyIndicator,
-.userCard__connectionIndicator {
+.userCard__connectionIndicator,
+.userCard__backupIndicator {
   background: rgba(255, 0, 0, 0.125);
   padding: 4px;
   border-radius: 128px;
@@ -128,7 +129,8 @@ ul {
 }
 
 .userCard__readyIndicator.isReady,
-.userCard__connectionIndicator.isConnected {
+.userCard__connectionIndicator.isConnected,
+.userCard__backupIndicator.isBackedUp {
   background: rgba(0, 187, 51, 0.125);
 }
 
