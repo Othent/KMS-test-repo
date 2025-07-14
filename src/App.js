@@ -75,6 +75,7 @@ function App() {
     walletCount: 0,
     walletPermissions: [],
     walletReady: false,
+    walletBackupMessage: undefined,
   });
 
   const [userDetails, setUserDetails] = useState({
@@ -247,6 +248,13 @@ function App() {
     });
   }, []);
 
+  const handleOnBackup = useCallback(({ backupMessage }) => {
+    setWalletInfo((...prevWalletInfo) => ({
+      ...prevWalletInfo,
+      walletBackupMessage: backupMessage || "",
+    }));
+  }, []);
+
   const handleSwitchWallet = useCallback(() => {
     const walletTypeIndex = WALLET_TYPES.indexOf(walletType);
     const nextWalletType =
@@ -293,7 +301,7 @@ function App() {
         // For local API development, uncomment this:
         // baseServerURL: "http://localhost:3001",
 
-        theme: "light",
+        theme: "dark",
 
         button: {
           position: "bottom-left",
@@ -326,6 +334,7 @@ function App() {
         */
 
         onAuth: handleOnAuth,
+        onBackup: handleOnBackup,
       });
 
       // For easier development / testing of WanderConnect-specific features (e.g. theming) from the Console:
@@ -336,7 +345,7 @@ function App() {
     }
 
     setWallet(window.arweaveWallet || null);
-  }, [walletType, setWallet, handleOnAuth]);
+  }, [walletType, setWallet, handleOnAuth, handleOnBackup]);
 
   useEffect(() => {
     function setWalletEvents() {
@@ -382,13 +391,14 @@ function App() {
               ])
             : ["", {}];
 
-        setWalletInfo({
+        setWalletInfo((prevWalletInfo) => ({
+          ...prevWalletInfo,
           walletReady: true,
           walletAlias: walletNames[activeAddress] || "",
           walletAddress: activeAddress || "",
           walletCount: Object.keys(walletNames).length,
           walletPermissions: permissions,
-        });
+        }));
       });
 
       wallet.events.on("gateway", (gateway) => {
@@ -424,13 +434,14 @@ function App() {
             ])
           : ["", {}];
 
-      setWalletInfo({
+      setWalletInfo((prevWalletInfo) => ({
+        ...prevWalletInfo,
         walletReady: true,
         walletAlias: walletNames[activeAddress],
         walletAddress: activeAddress,
         walletCount: Object.keys(walletNames).length,
         walletPermissions: permissions,
-      });
+      }));
 
       // wallet.connect(ALL_PERMISSIONS).catch(() => {});
     }
@@ -450,6 +461,7 @@ function App() {
           .catch(() => ({}));
 
         setWalletInfo((prevWalletInfo) => ({
+          ...prevWalletInfo,
           walletReady: true,
           walletAlias: walletNames[address],
           walletAddress: address,
