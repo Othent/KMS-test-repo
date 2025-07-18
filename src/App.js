@@ -214,7 +214,7 @@ function App() {
   const handleOnAuth = useCallback((authInfo) => {
     console.log("onAuth =", authInfo);
 
-    if (walletNameRef.current !== window.arweaveWallet.walletName) {
+    if (walletNameRef.current !== window.arweaveWallet?.walletName) {
       // This code runs in the following scenario:
       // - We select the BE option in Wander Connect.
       // - Reload the page.
